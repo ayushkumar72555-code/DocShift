@@ -17,6 +17,10 @@ It allows you to compress images, convert images to PDF, extract images from PDF
 - Fully offline processing with no data upload  
 
 ---
+## Intended Audience
+
+DocShift is built for users who regularly work with images and PDFs, including students, professionals, and everyday Android users.
+
 ## Screenshots
 
 | Home | Image Compression | Image to PDF |
@@ -63,7 +67,7 @@ Your data never leaves your phone.
 
 ## Project Status
 
-DocShift is under active development.
+DocShift is actively maintained and under ongoing development.
 
 Planned improvements include:
 - custom file rename  
@@ -83,8 +87,8 @@ Planned improvements include:
 
 ## License
 
-This project is currently private.  
-License details will be added when the repository is made public.
+This project is licensed under the MIT License.
+
 
 ---
 
