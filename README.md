@@ -66,8 +66,8 @@ Your data never leaves your phone.
 DocShift is under active development.
 
 Planned improvements include:
-- Enhanced batch controls  
-- Progress indicators  
+- custom file rename  
+- Image Enhancement  
 - Additional export options  
 
 ---
