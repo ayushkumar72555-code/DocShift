@@ -17,9 +17,12 @@ It allows you to compress images, convert images to PDF, extract images from PDF
 - Fully offline processing with no data upload  
 
 ---
+
 ## Intended Audience
 
 DocShift is built for users who regularly work with images and PDFs, including students, professionals, and everyday Android users.
+
+---
 
 ## Screenshots
 
@@ -30,6 +33,8 @@ DocShift is built for users who regularly work with images and PDFs, including s
 | PDF to Image | Share Action Chooser |
 |--------------|---------------------|
 | ![](screenshots/pdf_to_image.png) | ![](screenshots/share_chooser.png) |
+
+---
 
 ## System Share Support
 
