@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.ayush.aimage.pdf.ImageToPdfConverter
@@ -36,22 +37,31 @@ fun ImageToPdfScreen(
     var imageUris by remember { mutableStateOf(initialUris) }
     var resultFile by remember { mutableStateOf<File?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0) }
 
-    /* ---------- Conversion logic (single source of truth) ---------- */
+    /* ---------- Conversion logic ---------- */
 
     fun convertImagesToPdf(uris: List<Uri>) {
         if (uris.isEmpty()) return
 
         isProcessing = true
+        progress = 0
         resultFile = null
 
         scope.launch(Dispatchers.IO) {
             try {
+                // Simulate per-image progress
+                uris.forEachIndexed { index, _ ->
+                    withContext(Dispatchers.Main) {
+                        progress = index + 1
+                    }
+                }
+
                 val pdfFile = ImageToPdfConverter.convert(
                     resolver = contentResolver,
                     imageUris = uris,
                     outputDir = cacheDir,
-                    fileName = "AImage_${System.currentTimeMillis()}"
+                    fileName = "DocShift_${System.currentTimeMillis()}"
                 )
 
                 withContext(Dispatchers.Main) {
@@ -104,7 +114,7 @@ fun ImageToPdfScreen(
             Text("← Back")
         }
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(32.dp))
 
         Text("Image → PDF", style = MaterialTheme.typography.headlineMedium)
 
@@ -115,25 +125,43 @@ fun ImageToPdfScreen(
             enabled = !isProcessing,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                if (isProcessing) "Processing…" else "Select"
-            )
+            Text(if (isProcessing) "Processing…" else "Select Images")
         }
 
         if (imageUris.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
-            Text("Select: ${imageUris.size}")
+            Text("${imageUris.size} images selected")
         }
+
+        /* ---------- Progress UI ---------- */
+
+        if (isProcessing && imageUris.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+
+            LinearProgressIndicator(
+                progress = progress / imageUris.size.toFloat(),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                "Processing $progress of ${imageUris.size}",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        /* ---------- Result ---------- */
 
         resultFile?.let { file ->
             Spacer(Modifier.height(24.dp))
 
             Text(
                 "PDF created successfully",
-                fontWeight = MaterialTheme.typography.bodyLarge.fontWeight
+                fontWeight = FontWeight.Bold
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             Button(
                 onClick = {
@@ -146,10 +174,10 @@ fun ImageToPdfScreen(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Thank you Ayush!")
+                Text("Save")
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             Button(
                 onClick = {
@@ -167,3 +195,4 @@ fun ImageToPdfScreen(
         }
     }
 }
+

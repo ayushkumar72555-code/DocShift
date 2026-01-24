@@ -38,11 +38,11 @@ fun PdfToImageScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var selectedPdf: Uri? by remember {
-        mutableStateOf(initialPdf)
-    }
+    var selectedPdf by remember { mutableStateOf(initialPdf) }
     var resultFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var isProcessing by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0) }
+    var totalPages by remember { mutableStateOf(0) }
 
     val pdfPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -50,6 +50,8 @@ fun PdfToImageScreen(
         uri?.let {
             selectedPdf = it
             resultFiles = emptyList()
+            progress = 0
+            totalPages = 0
         }
     }
 
@@ -61,16 +63,18 @@ fun PdfToImageScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
+        // Back
         Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
             Text("← Back")
         }
 
-        Spacer(Modifier.height(50.dp))
+        Spacer(Modifier.height(32.dp))
 
         Text("PDF → Image", style = MaterialTheme.typography.headlineMedium)
 
         Spacer(Modifier.height(20.dp))
 
+        // Select PDF
         Button(
             onClick = { pdfPicker.launch("application/pdf") },
             enabled = !isProcessing,
@@ -84,38 +88,61 @@ fun PdfToImageScreen(
             Text("PDF selected")
         }
 
+        // Progress UI
+        if (isProcessing && totalPages > 0) {
+            Spacer(Modifier.height(20.dp))
+
+            LinearProgressIndicator(
+                progress = progress / totalPages.toFloat(),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                "Processing page $progress of $totalPages",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
         Spacer(Modifier.height(20.dp))
 
+        // Convert
         Button(
             enabled = selectedPdf != null && !isProcessing,
             onClick = {
                 val uri = selectedPdf ?: return@Button
-                isProcessing = true
 
-                scope.launch(Dispatchers.IO) {
+                isProcessing = true
+                resultFiles = emptyList()
+                progress = 0
+                totalPages = 0
+
+                scope.launch {
                     try {
                         val outputDir = File(cacheDir, "pdf_images")
-                        val images = PdfToImageConverter.convert(
-                            context = context,
-                            pdfUri = uri,
-                            outputDir = outputDir
-                        )
 
-                        withContext(Dispatchers.Main) {
-                            resultFiles = images
+                        val images = withContext(Dispatchers.IO) {
+                            PdfToImageConverter.convert(
+                                context = context,
+                                pdfUri = uri,
+                                outputDir = outputDir
+                            ) { current, total ->
+                                progress = current
+                                totalPages = total
+                            }
                         }
+
+                        resultFiles = images
+
                     } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                context,
-                                "PDF to Image failed",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        Toast.makeText(
+                            context,
+                            "PDF to Image failed",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } finally {
-                        withContext(Dispatchers.Main) {
-                            isProcessing = false
-                        }
+                        isProcessing = false
                     }
                 }
             },
@@ -124,12 +151,17 @@ fun PdfToImageScreen(
             Text(if (isProcessing) "Processing…" else "Convert to Images")
         }
 
+        // Results
         if (resultFiles.isNotEmpty()) {
             Spacer(Modifier.height(24.dp))
+
             Text(
                 "Generated ${resultFiles.size} images",
                 fontWeight = FontWeight.Bold
             )
+
+            Spacer(Modifier.height(12.dp))
+
             Button(
                 onClick = {
                     resultFiles.forEach { DownloadSaver.save(context, it) }
@@ -141,21 +173,22 @@ fun PdfToImageScreen(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Thank you Ayush!")
+                Text("Save All Images")
             }
+
+            Spacer(Modifier.height(8.dp))
+
             Button(
                 onClick = {
-                    val uris = resultFiles.map { file ->
+                    val uris = resultFiles.map {
                         FileProvider.getUriForFile(
                             context,
                             "${context.packageName}.provider",
-                            file
+                            it
                         )
                     }
 
-                    val intent = Intent(
-                        Intent.ACTION_SEND_MULTIPLE
-                    ).apply {
+                    val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
                         type = "image/*"
                         putParcelableArrayListExtra(
                             Intent.EXTRA_STREAM,
@@ -165,10 +198,7 @@ fun PdfToImageScreen(
                     }
 
                     context.startActivity(
-                        Intent.createChooser(
-                            intent,
-                            "Share images"
-                        )
+                        Intent.createChooser(intent, "Share images")
                     )
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -176,21 +206,18 @@ fun PdfToImageScreen(
                 Text("Share All Images")
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 resultFiles.forEachIndexed { index, file ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                            .padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Page ${index + 1}",
+                            "Page ${index + 1}",
                             modifier = Modifier.weight(1f)
                         )
 
@@ -232,7 +259,7 @@ fun PdfToImageScreen(
                     }
                 }
             }
-
         }
     }
 }
+

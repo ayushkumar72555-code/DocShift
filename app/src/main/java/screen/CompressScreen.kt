@@ -15,11 +15,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.ayush.aimage.image.ImageCompressor
 import com.ayush.aimage.storage.DownloadSaver
+import com.ayush.aimage.util.FileInfoUtils
+import com.ayush.aimage.util.FormatUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,11 +44,10 @@ fun CompressScreen(
 
     var targetSize by remember { mutableStateOf("100") }
     var expanded by remember { mutableStateOf(false) }
+    var progress by remember { mutableStateOf(0) }
 
-    var imageUris by remember {
-        mutableStateOf(initialUris)
-    }
-
+    var imageUris by remember { mutableStateOf(initialUris) }
+    var originalSizes by remember { mutableStateOf<List<Long>>(emptyList()) }
     var resultFiles by remember { mutableStateOf<List<File>>(emptyList()) }
     var isProcessing by remember { mutableStateOf(false) }
 
@@ -53,7 +55,11 @@ fun CompressScreen(
         ActivityResultContracts.GetMultipleContents()
     ) { uris ->
         imageUris = uris
+        originalSizes = uris.mapNotNull {
+            FileInfoUtils.getFileSize(contentResolver, it)
+        }
         resultFiles = emptyList()
+        progress = 0
     }
 
     Column(
@@ -64,16 +70,18 @@ fun CompressScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
+        // Back
         Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
             Text("← Back")
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
         Text("Reduce Size", style = MaterialTheme.typography.headlineMedium)
 
         Spacer(Modifier.height(24.dp))
 
+        // Target size selector
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
@@ -110,11 +118,13 @@ fun CompressScreen(
 
         Spacer(Modifier.height(16.dp))
 
+        // Select images
         Button(
             onClick = { imagePicker.launch("image/*") },
+            enabled = !isProcessing,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Select")
+            Text("Select Images")
         }
 
         if (imageUris.isNotEmpty()) {
@@ -122,8 +132,35 @@ fun CompressScreen(
             Text("${imageUris.size} selected")
         }
 
+        // Original size
+        if (originalSizes.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Original size: ${FormatUtils.formatSize(originalSizes.sum())}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
+        // Progress UI
+        if (isProcessing) {
+            Spacer(Modifier.height(16.dp))
+
+            LinearProgressIndicator(
+                progress = progress / imageUris.size.toFloat(),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                "Processing $progress of ${imageUris.size}",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
         Spacer(Modifier.height(24.dp))
 
+        // Compress button
         Button(
             enabled = imageUris.isNotEmpty() && !isProcessing,
             onClick = {
@@ -136,11 +173,14 @@ fun CompressScreen(
                 }
 
                 isProcessing = true
+                progress = 0
+                resultFiles = emptyList()
+
                 scope.launch(Dispatchers.IO) {
                     try {
                         val output = mutableListOf<File>()
 
-                        for (uri in imageUris) {
+                        imageUris.forEachIndexed { index, uri ->
                             val file = ImageCompressor.compressToTarget(
                                 contentResolver,
                                 uri,
@@ -148,6 +188,10 @@ fun CompressScreen(
                                 cacheDir
                             )
                             output.add(file)
+
+                            withContext(Dispatchers.Main) {
+                                progress = index + 1
+                            }
                         }
 
                         withContext(Dispatchers.Main) {
@@ -155,7 +199,11 @@ fun CompressScreen(
                         }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "Batch compression failed", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Batch compression failed",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     } finally {
                         withContext(Dispatchers.Main) {
@@ -166,29 +214,35 @@ fun CompressScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                if (isProcessing)
-                    "Compressing ${imageUris.size} "
-                else
-                    "Compress"
-            )
+            Text(if (isProcessing) "Compressing…" else "Compress")
         }
 
+        // Results
         if (resultFiles.isNotEmpty()) {
             Spacer(Modifier.height(24.dp))
 
-            Text("Compressed ${resultFiles.size}")
+            val originalTotal = originalSizes.sum()
+            val finalTotal = resultFiles.sumOf { it.length() }
+            val savedBytes = originalTotal - finalTotal
+            val savedPercent =
+                if (originalTotal > 0) (savedBytes * 100 / originalTotal) else 0
 
-            Spacer(Modifier.height(12.dp))
+            Text("Final size: ${FormatUtils.formatSize(finalTotal)}")
+            Text(
+                "Saved: ${FormatUtils.formatSize(savedBytes)} ($savedPercent%)",
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(16.dp))
 
             Button(
                 onClick = {
                     resultFiles.forEach { DownloadSaver.save(context, it) }
-                    Toast.makeText(context, "saved to Downloads", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Saved to Downloads", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Thank you Ayush!")
+                Text("Save")
             }
 
             Spacer(Modifier.height(8.dp))

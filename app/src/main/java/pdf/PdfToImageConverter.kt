@@ -12,69 +12,57 @@ import java.io.FileOutputStream
 
 object PdfToImageConverter {
 
-    fun convert(
+    suspend fun convert(
         context: Context,
         pdfUri: Uri,
-        outputDir: File
+        outputDir: File,
+        onProgress: (current: Int, total: Int) -> Unit
     ): List<File> {
 
         if (!outputDir.exists()) outputDir.mkdirs()
 
-        val results = mutableListOf<File>()
+        val pfd = context.contentResolver.openFileDescriptor(pdfUri, "r")
+            ?: throw IllegalArgumentException("Cannot open PDF")
 
-        val fd: ParcelFileDescriptor =
-            context.contentResolver.openFileDescriptor(pdfUri, "r")
-                ?: throw IllegalStateException("Cannot open PDF")
+        val renderer = PdfRenderer(pfd)
 
-        val renderer = PdfRenderer(fd)
+        val pageCount = renderer.pageCount
+        val outputFiles = mutableListOf<File>()
 
-        val dpi = 300
-        val scale = dpi / 72f
-
-        for (i in 0 until renderer.pageCount) {
+        for (i in 0 until pageCount) {
             val page = renderer.openPage(i)
 
-            val width = (page.width * scale).toInt()
-            val height = (page.height * scale).toInt()
-
             val bitmap = Bitmap.createBitmap(
-                width,
-                height,
+                page.width,
+                page.height,
                 Bitmap.Config.ARGB_8888
             )
 
-            // 🔴 THIS LINE FIXES BLACK BACKGROUNDS
+            // IMPORTANT: avoid black background
             bitmap.eraseColor(Color.WHITE)
-
-            val matrix = Matrix().apply {
-                postScale(scale, scale)
-            }
 
             page.render(
                 bitmap,
                 null,
-                matrix,
+                null,
                 PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY
             )
 
-            val outFile = File(
-                outputDir,
-                "AImage_page_${i + 1}.jpg"
-            )
-
+            val outFile = File(outputDir, "page_${i + 1}.jpg")
             FileOutputStream(outFile).use {
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it)
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
             }
 
-            bitmap.recycle()
             page.close()
+            outputFiles.add(outFile)
 
-            results.add(outFile)
+            // Progress callback
+            onProgress(i + 1, pageCount)
         }
 
         renderer.close()
-        fd.close()
+        pfd.close()
 
-        return results
+        return outputFiles
     }
 }
