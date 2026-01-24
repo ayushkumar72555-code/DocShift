@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===================== -->
+    <!-- Main App Theme -->
+    <!-- ===================== -->
+    <style name="Theme.AImage" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Compose Material3 handles UI theming -->
+    </style>
+
+    <!-- ===================== -->
+    <!-- Splash Screen Theme -->
+    <!-- ===================== -->
+    <style name="Theme.AImage.Splash" parent="Theme.SplashScreen">
+
+        <!-- Solid neutral background (system requirement) -->
+        <item name="windowSplashScreenBackground">@android:color/black</item>
+
+        <!-- LOGO ONLY (high quality drawable) -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+
+        <!-- Disable icon animation for clean look -->
+        <item name="windowSplashScreenAnimationDuration">0</item>
+
+        <!-- App theme after splash -->
+        <item name="postSplashScreenTheme">@style/Theme.AImage</item>
+
+    </style>
+
+
+</resources>
