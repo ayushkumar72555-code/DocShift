@@ -17,6 +17,15 @@ It allows you to compress images, convert images to PDF, extract images from PDF
 - Fully offline processing with no data upload  
 
 ---
+## Screenshots
+
+| Home | Image Compression | Image to PDF |
+|------|-------------------|--------------|
+| ![](screenshots/home.png) | ![](screenshots/compress.png) | ![](screenshots/image_to_pdf.png) |
+
+| PDF to Image | Share Action Chooser |
+|--------------|---------------------|
+| ![](screenshots/pdf_to_image.png) | ![](screenshots/share_chooser.png) |
 
 ## System Share Support
 
