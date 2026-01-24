@@ -21,3 +21,12 @@ and this project adheres to Semantic Versioning.
 
 ---
 
+## v1.0.1
+
+### Fixed
+- Fixed PDF to Image conversion crash
+- Added real-time progress UI for long operations
+- Improved PDF rendering quality (white background fix)
+- Improved batch handling and stability
+
+---
