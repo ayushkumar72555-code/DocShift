@@ -48,6 +48,15 @@ This allows faster workflows without manually opening the app first.
 
 ---
 
+## Quality Notes
+
+- PDF to Image conversion uses high-DPI rendering to preserve text sharpness and visual clarity.
+- Image to PDF conversion embeds images at their original resolution without unnecessary recompression.
+- No image downscaling is performed unless explicitly required, ensuring maximum fidelity for documents and scanned pages.
+- All processing is performed locally on the device.
+
+---
+
 ## Privacy
 
 All file processing happens locally on your device.
