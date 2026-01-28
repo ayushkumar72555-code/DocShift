@@ -30,3 +30,13 @@ and this project adheres to Semantic Versioning.
 - Improved batch handling and stability
 
 ---
+
+## v1.0.2
+
+### Improvement
+- Improved PDF to Image output quality using high-DPI rendering
+- Preserved original image quality when converting Image to PDF
+- Removed unintended downscaling and recompression
+- Improved visual clarity for text-heavy documents
+
+---
