@@ -75,7 +75,7 @@ fun CompressScreen(
             Text("← Back")
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(40.dp))
 
         Text("Reduce Size", style = MaterialTheme.typography.headlineMedium)
 

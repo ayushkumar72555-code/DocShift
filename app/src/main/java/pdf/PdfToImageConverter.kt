@@ -32,10 +32,30 @@ object PdfToImageConverter {
         for (i in 0 until pageCount) {
             val page = renderer.openPage(i)
 
+            // Scale factor (2 = good, 3 = excellent)
+            val scale = 3f
+
+            val width = (page.width * scale).toInt()
+            val height = (page.height * scale).toInt()
+
             val bitmap = Bitmap.createBitmap(
-                page.width,
-                page.height,
+                width,
+                height,
                 Bitmap.Config.ARGB_8888
+            )
+
+// White background (prevents black pages)
+            bitmap.eraseColor(Color.WHITE)
+
+            val matrix = Matrix().apply {
+                setScale(scale, scale)
+            }
+
+            page.render(
+                bitmap,
+                null,
+                matrix,
+                PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY
             )
 
             // IMPORTANT: avoid black background
@@ -50,7 +70,7 @@ object PdfToImageConverter {
 
             val outFile = File(outputDir, "page_${i + 1}.jpg")
             FileOutputStream(outFile).use {
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
             }
 
             page.close()

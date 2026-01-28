@@ -68,7 +68,7 @@ fun PdfToImageScreen(
             Text("← Back")
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(40.dp))
 
         Text("PDF → Image", style = MaterialTheme.typography.headlineMedium)
 

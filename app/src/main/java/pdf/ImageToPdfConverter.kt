@@ -17,8 +17,8 @@ object ImageToPdfConverter {
         fileName: String
     ): File {
 
-        if (imageUris.isEmpty()) {
-            throw IllegalArgumentException("No images provided")
+        require(imageUris.isNotEmpty()) {
+            "No images provided"
         }
 
         if (!outputDir.exists()) {
@@ -28,7 +28,7 @@ object ImageToPdfConverter {
         val pdfDocument = PdfDocument()
 
         imageUris.forEachIndexed { index, uri ->
-            val bitmap = decodeBitmapSafe(resolver, uri)
+            val bitmap = decodeBitmapFullQuality(resolver, uri)
 
             val pageInfo = PdfDocument.PageInfo.Builder(
                 bitmap.width,
@@ -37,13 +37,16 @@ object ImageToPdfConverter {
             ).create()
 
             val page = pdfDocument.startPage(pageInfo)
-            page.canvas.drawBitmap(bitmap, 0f, 0f, null)
-            pdfDocument.finishPage(page)
 
+            // Draw bitmap exactly as-is (no scaling, no compression)
+            page.canvas.drawBitmap(bitmap, 0f, 0f, null)
+
+            pdfDocument.finishPage(page)
             bitmap.recycle()
         }
 
         val outputFile = File(outputDir, "$fileName.pdf")
+
         FileOutputStream(outputFile).use {
             pdfDocument.writeTo(it)
         }
@@ -52,51 +55,26 @@ object ImageToPdfConverter {
         return outputFile
     }
 
-    private fun decodeBitmapSafe(
+    /**
+     * Decode image at full resolution without scaling or recompression.
+     * This preserves original image quality inside the PDF.
+     */
+    private fun decodeBitmapFullQuality(
         resolver: ContentResolver,
-        uri: Uri,
-        maxDimension: Int = 4096
+        uri: Uri
     ): Bitmap {
 
         val options = BitmapFactory.Options().apply {
-            inJustDecodeBounds = true
-        }
-
-        resolver.openInputStream(uri)!!.use {
-            BitmapFactory.decodeStream(it, null, options)
-        }
-
-        val sampleSize = calculateInSampleSize(
-            options.outWidth,
-            options.outHeight,
-            maxDimension
-        )
-
-        val decodeOptions = BitmapFactory.Options().apply {
-            inSampleSize = sampleSize
             inPreferredConfig = Bitmap.Config.ARGB_8888
+            inScaled = false
+            inDither = false
         }
 
-        resolver.openInputStream(uri)!!.use {
-            return BitmapFactory.decodeStream(it, null, decodeOptions)
+        resolver.openInputStream(uri)?.use { input ->
+            return BitmapFactory.decodeStream(input, null, options)
                 ?: throw IllegalStateException("Failed to decode bitmap")
         }
-    }
 
-    private fun calculateInSampleSize(
-        width: Int,
-        height: Int,
-        maxDim: Int
-    ): Int {
-        var inSampleSize = 1
-        var w = width
-        var h = height
-
-        while (w > maxDim || h > maxDim) {
-            w /= 2
-            h /= 2
-            inSampleSize *= 2
-        }
-        return inSampleSize
+        throw IllegalStateException("Unable to open image input stream")
     }
 }

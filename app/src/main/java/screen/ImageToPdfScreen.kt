@@ -38,6 +38,9 @@ fun ImageToPdfScreen(
     var resultFile by remember { mutableStateOf<File?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf(0) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var pendingFile by remember { mutableStateOf<File?>(null) }
+    var fileNameInput by remember { mutableStateOf("") }
 
     /* ---------- Conversion logic ---------- */
 
@@ -114,7 +117,7 @@ fun ImageToPdfScreen(
             Text("← Back")
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(40.dp))
 
         Text("Image → PDF", style = MaterialTheme.typography.headlineMedium)
 
@@ -165,17 +168,15 @@ fun ImageToPdfScreen(
 
             Button(
                 onClick = {
-                    DownloadSaver.save(context, file)
-                    Toast.makeText(
-                        context,
-                        "Saved to Downloads",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    pendingFile = resultFile
+                    fileNameInput = resultFile!!.nameWithoutExtension
+                    showRenameDialog = true
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Save")
             }
+
 
             Spacer(Modifier.height(8.dp))
 
@@ -192,6 +193,70 @@ fun ImageToPdfScreen(
             ) {
                 Text("Share")
             }
+            if (showRenameDialog && pendingFile != null) {
+                val originalFile = pendingFile!!
+                val extension = originalFile.extension
+
+                AlertDialog(
+                    onDismissRequest = { showRenameDialog = false },
+                    title = { Text("Rename PDF") },
+                    text = {
+                        Column {
+                            OutlinedTextField(
+                                value = fileNameInput,
+                                onValueChange = {
+                                    fileNameInput =
+                                        it.replace(Regex("""[\\/:*?"<>|]"""), "")
+                                },
+                                singleLine = true,
+                                label = { Text("File name") }
+                            )
+
+                            Spacer(Modifier.height(8.dp))
+                            Text(".$extension")
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val safeName = fileNameInput.trim()
+
+                                if (safeName.isNotEmpty()) {
+                                    val renamed = File(
+                                        originalFile.parent,
+                                        "$safeName.$extension"
+                                    )
+
+                                    originalFile.renameTo(renamed)
+                                    DownloadSaver.save(context, renamed)
+
+                                    Toast.makeText(
+                                        context,
+                                        "Saved as ${renamed.name}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                showRenameDialog = false
+                                pendingFile = null
+                            }
+                        ) {
+                            Text("Save")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                showRenameDialog = false
+                                pendingFile = null
+                            }
+                        ) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
         }
     }
 }
