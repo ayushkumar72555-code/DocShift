@@ -1,108 +1,184 @@
 # DocShift
 
-DocShift is a lightweight Android utility app for working with images and PDFs.  
-It allows you to compress images, convert images to PDF, extract images from PDFs, and process files in batches — all fully offline.
+DocShift is a lightweight yet powerful Android utility app for working with images and PDFs completely offline.
+
+It provides advanced image compression, image resizing, batch processing, PDF utilities, and smart file handling designed for students, professionals, creators, and everyday Android users.
 
 ---
 
 ## Features
 
-- Compress images to specific file sizes with minimal quality loss  
-- Convert one or multiple images into a single PDF  
-- Extract PDF pages as high-quality images  
-- Batch processing for faster workflows  
-- Direct integration with Android’s system Share menu  
-- Choose actions before processing shared images  
-- Save or share individual files or complete batches  
-- Fully offline processing with no data upload  
+### Image Compression
+- Compress images to an exact target file size
+- Supports presets like:
+  - 20 KB
+  - 50 KB
+  - 100 KB
+  - 200 KB
+  - 500 KB
+  - 1 MB
+- Smart compression algorithm with minimal quality loss
+- Batch image compression support
+- Compression reports showing:
+  - Original size
+  - Final size
+  - Saved space
 
 ---
 
-## Intended Audience
+### Advanced Image Resizing
 
-DocShift is built for users who regularly work with images and PDFs, including students, professionals, and everyday Android users.
+Resize images using multiple measurement systems:
+
+- Resize by Pixels
+- Resize by Centimeters
+- Resize by Inches
+
+Additional controls:
+- Optional Maintain Aspect Ratio
+- Manual width and height adjustment
+- Resize first, then compress to exact KB automatically
+
+Useful for:
+- Passport photos
+- Government forms
+- Exam applications
+- Online uploads with strict dimension requirements
+- Print-ready images
+
+Because apparently every website on Earth invented its own image requirements just to test human patience.
+
+---
+
+### Camera Capture with Target Sizes
+
+DocShift includes a smart camera workflow:
+
+- Capture photos directly from camera
+- Choose target size before capture
+- Optimized output for:
+  - 20 KB photos
+  - 50 KB photos
+  - 100 KB photos
+  - Custom sizes
+- Instant compression after capture
+
+Designed for:
+- Exam forms
+- ID uploads
+- Job portals
+- Government applications
+
+No more taking a 12 MB image just to brutally compress it afterward like medieval file torture.
+
+---
+
+### PDF Tools
+- Convert one or multiple images into a single PDF
+- Extract PDF pages as high-quality images
+- High-quality rendering for text clarity
+- Batch PDF processing support
+
+---
+
+### Batch Processing
+- Compress multiple images at once
+- Save time during bulk workflows
+- Real-time progress tracking
+- Per-image compression reports
+
+---
+
+### Android Share Integration
+DocShift works directly from Android’s Share menu.
+
+You can:
+- Share images from Gallery or Files
+- Compress instantly
+- Convert images to PDF
+- Process shared files without opening the app manually
+
+Fast workflows. Fewer taps. Slightly less suffering.
 
 ---
 
 ## Screenshots
 
-| Home | Image Compression | Image Resize | Image to PDF |
-|------|-------------------|--------------|
-| ![](screenshots/home.png) | ![](screenshots/compress.png) | ![](screenshots/resize.png) | ![](screenshots/image_to_pdf.png) |
+| Home | Compression | Resize |
+|------|-------------|---------|
+| ![](screenshots/home.png) | ![](screenshots/compress.png) | ![](screenshots/resize.png) |
 
-| PDF to Image | Share Action Chooser |
-|--------------|---------------------|
-| ![](screenshots/pdf_to_image.png) | ![](screenshots/share_chooser.png) |
-
----
-
-## System Share Support
-
-DocShift can be used directly from other apps:
-
-- Share images from Gallery or Files to compress or convert to PDF  
-- Share PDFs from any app to extract pages as images  
-- Decide what action to take before processing  
-
-This allows faster workflows without manually opening the app first.
+| Compression Report | Image to PDF |
+|-------------------|---------------|
+| ![](screenshots/report.png) | ![](screenshots/image_to_pdf.png) |
 
 ---
 
 ## Quality Notes
 
-- PDF to Image conversion uses high-DPI rendering to preserve text sharpness and visual clarity.
-- Image to PDF conversion embeds images at their original resolution without unnecessary recompression.
-- No image downscaling is performed unless explicitly required, ensuring maximum fidelity for documents and scanned pages.
-- All processing is performed locally on the device.
+- Exact KB targeting using smart binary-search compression
+- High-quality JPEG optimization
+- Minimal visible quality degradation
+- Aspect ratio preservation support
+- High-DPI PDF rendering
+- Local offline processing only
+- No forced downscaling unless requested
 
 ---
 
 ## Privacy
 
-All file processing happens locally on your device.
+All processing happens entirely on your device.
 
-- No internet connection required  
-- No user accounts  
-- No tracking or analytics  
-- No file uploads  
+- No internet required
+- No accounts
+- No analytics
+- No tracking
+- No cloud upload
 
-Your data never leaves your phone.
+Your files stay on your phone. A revolutionary concept in modern software.
 
 ---
 
 ## Tech Stack
 
-- Kotlin  
-- Jetpack Compose  
-- Android Storage Access Framework  
-- FileProvider for secure file sharing  
+- Kotlin
+- Jetpack Compose
+- Android Storage Access Framework
+- MediaStore API
+- FileProvider
+- Coroutines
 
 ---
 
 ## Project Status
 
-DocShift is actively maintained and under ongoing development.
+DocShift is actively maintained and under continuous development.
 
-Planned improvements include:
-- custom file rename  
-- Image Enhancement  
-- Additional export options  
+### Planned Features
+- AI image enhancement
+- HEIC/WebP support
+- Custom file rename
+- Background processing
+- Better PDF optimization
+- Dark mode customization
+- Metadata cleaner
+- Document scanner
 
 ---
 
 ## Getting Started (Developers)
 
-1. Clone the repository  
-2. Open the project in Android Studio  
-3. Let Gradle sync complete  
-4. Run the app on a device or emulator  
+1. Clone the repository
+2. Open in Android Studio
+3. Let Gradle sync finish
+4. Run on a real device or emulator
 
 ---
 
 ## License
 
 This project is licensed under the MIT License.
-
 
 ---
 
