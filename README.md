@@ -108,7 +108,7 @@ Fast workflows. Fewer taps. Slightly less suffering.
 |------|-------------|---------|
 | ![](home.png) | ![](screenshots/compress.png) | ![](resize.png) |
 
-| Image to PDF || PDF to Image |
+| Image to PDF | PDF to Image |
 |---------------|---------------|
 | ![](screenshots/image_to_pdf.png) | ![](screenshots/pdf_to_image.png) |
 
