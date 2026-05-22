@@ -106,11 +106,11 @@ Fast workflows. Fewer taps. Slightly less suffering.
 
 | Home | Compression | Resize |
 |------|-------------|---------|
-| ![](screenshots/home.png) | ![](screenshots/compress.png) | ![](resize.png) |
+| ![](home.png) | ![](screenshots/compress.png) | ![](resize.png) |
 
-| Image to PDF |
+| Image to PDF || PDF to Image |
 |---------------|
-| ![](screenshots/image_to_pdf.png) |
+| ![](screenshots/image_to_pdf.png) | ![](screenshots/pdf_to_image.png) |
 
 ---
 
