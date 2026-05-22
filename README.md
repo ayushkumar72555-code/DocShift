@@ -50,29 +50,6 @@ Because apparently every website on Earth invented its own image requirements ju
 
 ---
 
-### Camera Capture with Target Sizes
-
-DocShift includes a smart camera workflow:
-
-- Capture photos directly from camera
-- Choose target size before capture
-- Optimized output for:
-  - 20 KB photos
-  - 50 KB photos
-  - 100 KB photos
-  - Custom sizes
-- Instant compression after capture
-
-Designed for:
-- Exam forms
-- ID uploads
-- Job portals
-- Government applications
-
-No more taking a 12 MB image just to brutally compress it afterward like medieval file torture.
-
----
-
 ### PDF Tools
 - Convert one or multiple images into a single PDF
 - Extract PDF pages as high-quality images
