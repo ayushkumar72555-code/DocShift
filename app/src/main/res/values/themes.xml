@@ -4,14 +4,14 @@
     <!-- ===================== -->
     <!-- Main App Theme -->
     <!-- ===================== -->
-    <style name="Theme.AImage" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.DocShift" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Compose Material3 handles UI theming -->
     </style>
 
     <!-- ===================== -->
     <!-- Splash Screen Theme -->
     <!-- ===================== -->
-    <style name="Theme.AImage.Splash" parent="Theme.SplashScreen">
+    <style name="Theme.DocShift.Splash" parent="Theme.SplashScreen">
 
         <!-- Solid neutral background (system requirement) -->
         <item name="windowSplashScreenBackground">@android:color/black</item>
@@ -23,7 +23,7 @@
         <item name="windowSplashScreenAnimationDuration">0</item>
 
         <!-- App theme after splash -->
-        <item name="postSplashScreenTheme">@style/Theme.AImage</item>
+        <item name="postSplashScreenTheme">@style/Theme.DocShift</item>
 
     </style>
 

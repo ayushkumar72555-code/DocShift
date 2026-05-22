@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AImage"
+rootProject.name = "DocShift"
 include(":app")

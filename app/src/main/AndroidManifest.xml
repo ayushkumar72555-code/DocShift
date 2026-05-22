@@ -10,10 +10,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AImage.Splash">
+        android:theme="@style/Theme.DocShift.Splash">
 
         <activity
-            android:name="com.ayush.aimage.MainActivity"
+            android:name="com.ayush.docshift.MainActivity"
             android:exported="true"
             android:label="@string/app_name">
 

@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.ayush.aimage"
+    namespace = "com.ayush.docshift"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.ayush.aimage"
+        applicationId = "com.ayush.docshift"
         minSdk = 29
         targetSdk = 36
         versionCode = 1
