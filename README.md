@@ -26,9 +26,9 @@ DocShift is built for users who regularly work with images and PDFs, including s
 
 ## Screenshots
 
-| Home | Image Compression | Image to PDF |
+| Home | Image Compression | Image Resize | Image to PDF |
 |------|-------------------|--------------|
-| ![](screenshots/home.png) | ![](screenshots/compress.png) | ![](screenshots/image_to_pdf.png) |
+| ![](screenshots/home.png) | ![](screenshots/compress.png) | ![](screenshots/resize.png) | ![](screenshots/image_to_pdf.png) |
 
 | PDF to Image | Share Action Chooser |
 |--------------|---------------------|
