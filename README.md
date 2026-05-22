@@ -108,9 +108,9 @@ Fast workflows. Fewer taps. Slightly less suffering.
 |------|-------------|---------|
 | ![](screenshots/home.png) | ![](screenshots/compress.png) | ![](screenshots/resize.png) |
 
-| Compression Report | Image to PDF |
-|-------------------|---------------|
-| ![](screenshots/report.png) | ![](screenshots/image_to_pdf.png) |
+| Image to PDF |
+|---------------|
+| ![](screenshots/image_to_pdf.png) |
 
 ---
 
