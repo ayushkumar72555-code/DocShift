@@ -10,11 +10,13 @@ import java.io.FileOutputStream
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sqrt
 
 object ImageCompressor {
     private const val MAX_DECODE_DIMENSION = 4096
     private const val MIN_QUALITY = 5
     private const val MAX_QUALITY = 100
+    private const val MAX_RESIZE_PASSES = 5
 
     fun compressToTarget(
         resolver: ContentResolver,
@@ -24,7 +26,11 @@ object ImageCompressor {
     ): File {
         require(targetKb > 0) { "Target size must be greater than 0" }
         val bitmap = BitmapUtils.decodeSafe(resolver, uri, MAX_DECODE_DIMENSION)
-        return compressBitmapToTarget(bitmap, targetKb, cacheDir, "DocShift")
+        return try {
+            compressBitmapToTarget(bitmap, targetKb, cacheDir, "DocShift")
+        } finally {
+            if (!bitmap.isRecycled) bitmap.recycle()
+        }
     }
 
     fun compressBitmapToTarget(
@@ -34,34 +40,36 @@ object ImageCompressor {
         filePrefix: String = "DocShift"
     ): File {
         require(targetKb > 0) { "Target size must be greater than 0" }
+        require(!bitmap.isRecycled) { "Bitmap is already recycled" }
 
         var currentBitmap = resizeForTarget(bitmap, targetKb)
         var bestData: ByteArray? = null
         var bestDifference = Long.MAX_VALUE
+        val targetBytes = targetKb.toLong() * 1024L
 
         try {
-            repeat(5) {
-                val data = findClosestJpeg(currentBitmap, targetKb)
-                val difference = abs(data.size - targetKb * 1024L)
+            repeat(MAX_RESIZE_PASSES) {
+                val data = findClosestJpeg(currentBitmap, targetBytes)
+                val difference = abs(data.size.toLong() - targetBytes)
 
                 if (difference < bestDifference) {
                     bestData = data
                     bestDifference = difference
                 }
 
-                if (data.size <= targetKb * 1024L) return@repeat
+                if (data.size.toLong() <= targetBytes) {
+                    return writeResult(cacheDir, filePrefix, data)
+                }
 
-                val scale = min(
-                    0.85f,
-                    kotlin.math.sqrt(targetKb.toDouble() / (data.size / 1024.0))
-                        .coerceIn(0.45, 0.85)
-                        .toFloat()
-                )
+                val scale = sqrt(targetBytes.toDouble() / data.size.toDouble())
+                    .coerceIn(0.45, 0.85)
+                    .toFloat()
+
                 val newWidth = max(1, (currentBitmap.width * scale).toInt())
                 val newHeight = max(1, (currentBitmap.height * scale).toInt())
 
                 if (newWidth == currentBitmap.width && newHeight == currentBitmap.height) {
-                    return@repeat
+                    return writeResult(cacheDir, filePrefix, bestData!!)
                 }
 
                 val nextBitmap = Bitmap.createScaledBitmap(
@@ -70,23 +78,18 @@ object ImageCompressor {
                     newHeight,
                     true
                 )
+
                 if (currentBitmap !== bitmap) currentBitmap.recycle()
                 currentBitmap = nextBitmap
             }
 
-            val outFile = File(
-                cacheDir,
-                "${filePrefix}_${targetKb}KB_${System.currentTimeMillis()}.jpg"
-            )
-            FileOutputStream(outFile).use { it.write(bestData!!) }
-            return outFile
+            return writeResult(cacheDir, filePrefix, bestData!!)
         } finally {
-            if (currentBitmap !== bitmap) currentBitmap.recycle()
-            if (!bitmap.isRecycled) bitmap.recycle()
+            if (currentBitmap !== bitmap && !currentBitmap.isRecycled) currentBitmap.recycle()
         }
     }
 
-    private fun findClosestJpeg(bitmap: Bitmap, targetKb: Int): ByteArray {
+    private fun findClosestJpeg(bitmap: Bitmap, targetBytes: Long): ByteArray {
         var low = MIN_QUALITY
         var high = MAX_QUALITY
         var best: ByteArray? = null
@@ -94,22 +97,39 @@ object ImageCompressor {
 
         while (low <= high) {
             val quality = (low + high) / 2
-            val data = ByteArrayOutputStream().use { stream ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
-                stream.toByteArray()
-            }
-            val difference = abs(data.size - targetKb * 1024L)
+            val data = compressJpeg(bitmap, quality)
+            val difference = abs(data.size.toLong() - targetBytes)
 
             if (difference < bestDifference) {
                 best = data
                 bestDifference = difference
             }
 
-            if (data.size > targetKb * 1024L) high = quality - 1
-            else low = quality + 1
+            if (data.size.toLong() > targetBytes) {
+                high = quality - 1
+            } else {
+                low = quality + 1
+            }
         }
 
-        return best!!
+        return best ?: throw IllegalStateException("Unable to compress image")
+    }
+
+    private fun compressJpeg(bitmap: Bitmap, quality: Int): ByteArray =
+        ByteArrayOutputStream().use { stream ->
+            check(bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)) {
+                "Unable to encode image"
+            }
+            stream.toByteArray()
+        }
+
+    private fun writeResult(cacheDir: File, prefix: String, data: ByteArray): File {
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            throw IllegalStateException("Unable to create output directory")
+        }
+        val outFile = File(cacheDir, "${prefix}_${System.currentTimeMillis()}.jpg")
+        FileOutputStream(outFile).use { it.write(data) }
+        return outFile
     }
 
     private fun resizeForTarget(bitmap: Bitmap, targetKb: Int): Bitmap {
