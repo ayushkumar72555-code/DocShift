@@ -21,7 +21,7 @@ object ImageResizer {
             BitmapFactory.decodeFileDescriptor(it.fileDescriptor, null, options)
         }
 
-        if (decoded == null && (options.outWidth <= 0 || options.outHeight <= 0)) {
+        if (decoded == null) {
             throw IllegalStateException("Unable to read image. The selected file may no longer be accessible.")
         }
 
