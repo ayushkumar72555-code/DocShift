@@ -40,11 +40,23 @@ fun ImageToPdfScreen(contentResolver: ContentResolver, cacheDir: File, initialUr
         resultFile = null
         scope.launch(Dispatchers.IO) {
             try {
-                uris.forEachIndexed { index, _ -> withContext(Dispatchers.Main) { progress = index + 1 } }
-                val pdf = ImageToPdfConverter.convert(contentResolver, uris, cacheDir, "DocShift_" + System.currentTimeMillis())
+                val pdf = ImageToPdfConverter.convert(
+                    resolver = contentResolver,
+                    imageUris = uris,
+                    outputDir = cacheDir,
+                    fileName = "DocShift_" + System.currentTimeMillis()
+                ) { current, _ ->
+                    withContext(Dispatchers.Main) { progress = current }
+                }
                 withContext(Dispatchers.Main) { resultFile = pdf }
-            } catch (_: Exception) {
-                withContext(Dispatchers.Main) { Toast.makeText(context, "Image to PDF failed", Toast.LENGTH_SHORT).show() }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "Image to PDF failed: " + (e.message ?: "Unknown error"),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             } finally { withContext(Dispatchers.Main) { isProcessing = false } }
         }
     }
@@ -100,9 +112,26 @@ fun ImageToPdfScreen(contentResolver: ContentResolver, cacheDir: File, initialUr
                     val safeName = fileNameInput.trim()
                     if (safeName.isNotEmpty()) {
                         val renamed = File(original.parent, safeName + "." + extension)
-                        original.renameTo(renamed)
-                        DownloadSaver.save(context, renamed)
-                        Toast.makeText(context, "Saved as " + renamed.name, Toast.LENGTH_SHORT).show()
+                        val savedFile = if (renamed.absolutePath == original.absolutePath) {
+                            original
+                        } else {
+                            runCatching {
+                                original.copyTo(renamed, overwrite = true)
+                                renamed
+                            }.getOrElse { original }
+                        }
+                        runCatching {
+                            DownloadSaver.save(context, savedFile)
+                        }.onSuccess {
+                            Toast.makeText(context, "Saved as " + safeName + "." + extension, Toast.LENGTH_SHORT).show()
+                        }.onFailure {
+                            Toast.makeText(
+                                context,
+                                "Save failed: " + (it.message ?: "Unknown error"),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                        if (savedFile != original) savedFile.delete()
                     }
                     showRenameDialog = false
                     pendingFile = null
