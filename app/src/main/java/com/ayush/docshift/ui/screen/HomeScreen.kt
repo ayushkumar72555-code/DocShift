@@ -18,7 +18,6 @@ fun HomeScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Text("DocShift", style = MaterialTheme.typography.headlineMedium)
 
         Spacer(Modifier.height(32.dp))
@@ -37,6 +36,15 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Image Resize")
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Button(
+            onClick = { onSelect(Screen.PdfResize) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("PDF Resize")
         }
 
         Spacer(Modifier.height(16.dp))
