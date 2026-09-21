@@ -49,14 +49,24 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
     var resultFiles by remember { mutableStateOf<List<File>>(emptyList()) }
 
     fun loadSelected(uris: List<Uri>) {
-        imageUris = uris
         resultFiles = emptyList()
         progress = 0
-        originalSizes = uris.mapNotNull { FileInfoUtils.getFileSize(contentResolver, it) }
         scope.launch(Dispatchers.IO) {
             try {
-                val dimensions = uris.firstOrNull()?.let { ImageResizer.readDimensions(contentResolver, it) }
+                val localUris = uris.mapIndexed { index, uri ->
+                    materializeUri(contentResolver, uri, cacheDir, index)
+                }
+                val sizes = localUris.mapNotNull { uri ->
+                    FileInfoUtils.getFileSize(contentResolver, uri)
+                        ?: uri.path?.let { File(it).length() }
+                }
+                val dimensions = localUris.firstOrNull()?.let {
+                    ImageResizer.readDimensions(contentResolver, it)
+                }
+
                 withContext(Dispatchers.Main) {
+                    imageUris = localUris
+                    originalSizes = sizes
                     firstDimensions = dimensions
                     if (dimensions != null && width.isBlank() && height.isBlank()) {
                         width = dimensions.width.toString()
@@ -65,29 +75,45 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
+                    imageUris = emptyList()
+                    originalSizes = emptyList()
                     firstDimensions = null
                     Toast.makeText(
                         context,
-                        e.message ?: "Unable to read the selected image",
-                        Toast.LENGTH_SHORT
+                        "Unable to read image: " + (e.message ?: "The selected file could not be accessed"),
+                        Toast.LENGTH_LONG
                     ).show()
                 }
             }
         }
     }
+
+    fun materializeUri(
+        resolver: ContentResolver,
+        uri: Uri,
+        cacheDir: File,
+        index: Int
+    ): Uri {
+        if (uri.scheme == "file") return uri
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            throw IllegalStateException("Unable to create temporary storage")
+        }
+
+        val output = File(cacheDir, "resize_input_\${System.currentTimeMillis()}_\$index.img")
+        resolver.openInputStream(uri)?.use { input ->
+            output.outputStream().use { outputStream -> input.copyTo(outputStream) }
+        } ?: throw IllegalStateException("The selected file could not be opened")
+
+        if (output.length() == 0L) {
+            output.delete()
+            throw IllegalStateException("The selected image is empty")
+        }
+
+        return Uri.fromFile(output)
+    }
     LaunchedEffect(initialUris) { if (initialUris.isNotEmpty()) loadSelected(initialUris) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) {
-            uris.forEach { uri ->
-                try {
-                    contentResolver.takePersistableUriPermission(
-                        uri,
-                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    )
-                } catch (_: SecurityException) {
-                    // Some providers grant temporary access only.
-                }
-            }
             loadSelected(uris)
         }
     }
