@@ -2,7 +2,7 @@
 
 DocShift is a lightweight yet powerful Android utility app for working with images and PDFs completely offline.
 
-It provides advanced image compression, image resizing, batch processing, PDF utilities, and smart file handling designed for students, professionals, creators, and everyday Android users.
+It provides advanced image compression, image resizing, PDF page resizing, batch processing, PDF utilities, and smart file handling designed for students, professionals, creators, and everyday Android users.
 
 ---
 
@@ -50,6 +50,24 @@ Because apparently every website on Earth invented its own image requirements ju
 
 ---
 
+### PDF Resizing
+
+Resize every page of a PDF using the same controls as image resizing:
+
+- Resize by Pixels
+- Resize by Centimeters
+- Resize by Inches
+- Configurable DPI
+- Optional Maintain Aspect Ratio
+- Manual width and height adjustment
+- Multi-page PDF processing
+- Real-time page progress
+- Save or share the resized PDF
+
+PDF pages are re-rendered during resizing, so interactive PDF elements such as editable form fields, links, and embedded document structure may not be preserved.
+
+---
+
 ### PDF Tools
 - Convert one or multiple images into a single PDF
 - Extract PDF pages as high-quality images
@@ -72,6 +90,8 @@ DocShift works directly from Android’s Share menu.
 You can:
 - Share images from Gallery or Files
 - Compress instantly
+- Resize images
+- Share a PDF directly into PDF Resize
 - Convert images to PDF
 - Process shared files without opening the app manually
 
