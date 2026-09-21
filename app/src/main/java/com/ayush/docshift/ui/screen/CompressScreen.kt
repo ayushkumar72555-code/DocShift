@@ -97,8 +97,14 @@ fun CompressScreen(contentResolver: ContentResolver, cacheDir: File, initialUris
                             withContext(Dispatchers.Main) { progress = index + 1 }
                         }
                         withContext(Dispatchers.Main) { resultFiles = output }
-                    } catch (_: Exception) {
-                        withContext(Dispatchers.Main) { Toast.makeText(context, "Compression failed", Toast.LENGTH_SHORT).show() }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                context,
+                                "Compression failed: " + (e.message ?: "Unknown error"),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     } finally {
                         withContext(Dispatchers.Main) { isProcessing = false }
                     }
