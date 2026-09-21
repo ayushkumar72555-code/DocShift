@@ -19,7 +19,6 @@ data class DocShiftUiState(
 )
 
 class DocShiftViewModel : ViewModel() {
-
     private val _uiState = MutableStateFlow(DocShiftUiState())
     val uiState: StateFlow<DocShiftUiState> = _uiState.asStateFlow()
 
@@ -86,8 +85,7 @@ class DocShiftViewModel : ViewModel() {
     }
 
     fun goBack() {
-        val state = _uiState.value
-        if (state.screen != Screen.Home && state.screen != Screen.Tutorial) {
+        if (_uiState.value.screen != Screen.Home && _uiState.value.screen != Screen.Tutorial) {
             goHome()
         }
     }
@@ -104,7 +102,7 @@ class DocShiftViewModel : ViewModel() {
                             Screen.SharedChooser to listOf(it)
 
                         intent.type == "application/pdf" ->
-                            Screen.PdfResize to listOf(it)
+                            Screen.PdfCompress to listOf(it)
 
                         else -> null
                     }
@@ -113,11 +111,7 @@ class DocShiftViewModel : ViewModel() {
 
             Intent.ACTION_SEND_MULTIPLE -> {
                 val uris = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
-                if (!uris.isNullOrEmpty()) {
-                    Screen.SharedChooser to uris
-                } else {
-                    null
-                }
+                if (!uris.isNullOrEmpty()) Screen.SharedChooser to uris else null
             }
 
             else -> null
