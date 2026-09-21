@@ -16,10 +16,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.lifecycleScope
 import com.ayush.docshift.ui.screen.*
 import com.ayush.docshift.ui.theme.DocShiftTheme
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
