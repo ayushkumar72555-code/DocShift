@@ -10,11 +10,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.ayush.docshift.pdf.ImageToPdfConverter
 import com.ayush.docshift.storage.DownloadSaver
@@ -23,17 +21,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ImageToPdfScreen(
-    contentResolver: ContentResolver,
-    cacheDir: File,
-    initialUris: List<Uri> = emptyList(),
-    onBack: () -> Unit
-) {
+fun ImageToPdfScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: List<Uri> = emptyList(), onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-
     var imageUris by remember { mutableStateOf(initialUris) }
     var resultFile by remember { mutableStateOf<File?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
@@ -42,222 +33,82 @@ fun ImageToPdfScreen(
     var pendingFile by remember { mutableStateOf<File?>(null) }
     var fileNameInput by remember { mutableStateOf("") }
 
-    /* ---------- Conversion logic ---------- */
-
-    fun convertImagesToPdf(uris: List<Uri>) {
+    fun convert(uris: List<Uri>) {
         if (uris.isEmpty()) return
-
         isProcessing = true
         progress = 0
         resultFile = null
-
         scope.launch(Dispatchers.IO) {
             try {
-                // Simulate per-image progress
-                uris.forEachIndexed { index, _ ->
-                    withContext(Dispatchers.Main) {
-                        progress = index + 1
+                uris.forEachIndexed { index, _ -> withContext(Dispatchers.Main) { progress = index + 1 } }
+                val pdf = ImageToPdfConverter.convert(contentResolver, uris, cacheDir, "DocShift_" + System.currentTimeMillis())
+                withContext(Dispatchers.Main) { resultFile = pdf }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { Toast.makeText(context, "Image to PDF failed", Toast.LENGTH_SHORT).show() }
+            } finally { withContext(Dispatchers.Main) { isProcessing = false } }
+        }
+    }
+
+    LaunchedEffect(initialUris) { if (initialUris.isNotEmpty()) convert(initialUris) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) {
+        if (it.isNotEmpty()) { imageUris = it; convert(it) }
+    }
+
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
+        DocShiftScaffold("Image to PDF", "Combine multiple images into one PDF", onBack) {
+            SectionCard("Images") {
+                if (imageUris.isEmpty()) Text("Select one or more images to create a PDF.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                else Text(imageUris.size.toString() + " image" + if (imageUris.size == 1) " selected" else "s selected", fontWeight = FontWeight.Medium)
+                SecondaryAction("Select images", !isProcessing) { picker.launch("image/*") }
+            }
+            if (isProcessing) SectionCard("Progress") { ProgressBlock(progress, imageUris.size, "Processing " + progress + " of " + imageUris.size) }
+            if (resultFile == null && !isProcessing) PrimaryAction("Create PDF", imageUris.isNotEmpty()) { convert(imageUris) }
+            resultFile?.let { file ->
+                SectionCard("Result") {
+                    Text("PDF created successfully", fontWeight = FontWeight.SemiBold)
+                    Text(file.name, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button(onClick = { pendingFile = file; fileNameInput = file.nameWithoutExtension; showRenameDialog = true }, Modifier.weight(1f)) { Text("Save") }
+                        OutlinedButton(onClick = { DownloadSaver.share(context, FileProvider.getUriForFile(context, context.packageName + ".provider", file)) }, Modifier.weight(1f)) { Text("Share") }
                     }
                 }
-
-                val pdfFile = ImageToPdfConverter.convert(
-                    resolver = contentResolver,
-                    imageUris = uris,
-                    outputDir = cacheDir,
-                    fileName = "DocShift_${System.currentTimeMillis()}"
-                )
-
-                withContext(Dispatchers.Main) {
-                    resultFile = pdfFile
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        context,
-                        "Image → PDF failed",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            } finally {
-                withContext(Dispatchers.Main) {
-                    isProcessing = false
-                }
             }
         }
     }
 
-    /* ---------- Auto-start when launched via Share ---------- */
-
-    LaunchedEffect(initialUris) {
-        if (initialUris.isNotEmpty()) {
-            convertImagesToPdf(initialUris)
-        }
-    }
-
-    /* ---------- Picker ---------- */
-
-    val imagePicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetMultipleContents()
-    ) { uris ->
-        imageUris = uris
-        convertImagesToPdf(uris)
-    }
-
-    /* ---------- UI ---------- */
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-            Text("← Back")
-        }
-
-        Spacer(Modifier.height(40.dp))
-
-        Text("Image → PDF", style = MaterialTheme.typography.headlineMedium)
-
-        Spacer(Modifier.height(20.dp))
-
-        Button(
-            onClick = { imagePicker.launch("image/*") },
-            enabled = !isProcessing,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(if (isProcessing) "Processing…" else "Select Images")
-        }
-
-        if (imageUris.isNotEmpty()) {
-            Spacer(Modifier.height(12.dp))
-            Text("${imageUris.size} images selected")
-        }
-
-        /* ---------- Progress UI ---------- */
-
-        if (isProcessing && imageUris.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
-
-            LinearProgressIndicator(
-                progress = progress / imageUris.size.toFloat(),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                "Processing $progress of ${imageUris.size}",
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-
-        /* ---------- Result ---------- */
-
-        resultFile?.let { file ->
-            Spacer(Modifier.height(24.dp))
-
-            Text(
-                "PDF created successfully",
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            Button(
-                onClick = {
-                    pendingFile = resultFile
-                    fileNameInput = resultFile!!.nameWithoutExtension
-                    showRenameDialog = true
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Save")
-            }
-
-
-            Spacer(Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    val uri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.provider",
-                        file
+    if (showRenameDialog && pendingFile != null) {
+        val original = pendingFile!!
+        val extension = original.extension
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Save PDF") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Choose a file name before saving.")
+                    OutlinedTextField(
+                        value = fileNameInput,
+                        onValueChange = { fileNameInput = it.replace(Regex("""[\\/:*?"<>|]"""), "") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("File name") }
                     )
-                    DownloadSaver.share(context, uri)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Share")
-            }
-            if (showRenameDialog && pendingFile != null) {
-                val originalFile = pendingFile!!
-                val extension = originalFile.extension
-
-                AlertDialog(
-                    onDismissRequest = { showRenameDialog = false },
-                    title = { Text("Rename PDF") },
-                    text = {
-                        Column {
-                            OutlinedTextField(
-                                value = fileNameInput,
-                                onValueChange = {
-                                    fileNameInput =
-                                        it.replace(Regex("""[\\/:*?"<>|]"""), "")
-                                },
-                                singleLine = true,
-                                label = { Text("File name") }
-                            )
-
-                            Spacer(Modifier.height(8.dp))
-                            Text(".$extension")
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                val safeName = fileNameInput.trim()
-
-                                if (safeName.isNotEmpty()) {
-                                    val renamed = File(
-                                        originalFile.parent,
-                                        "$safeName.$extension"
-                                    )
-
-                                    originalFile.renameTo(renamed)
-                                    DownloadSaver.save(context, renamed)
-
-                                    Toast.makeText(
-                                        context,
-                                        "Saved as ${renamed.name}",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-
-                                showRenameDialog = false
-                                pendingFile = null
-                            }
-                        ) {
-                            Text("Save")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(
-                            onClick = {
-                                showRenameDialog = false
-                                pendingFile = null
-                            }
-                        ) {
-                            Text("Cancel")
-                        }
+                    Text("." + extension, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val safeName = fileNameInput.trim()
+                    if (safeName.isNotEmpty()) {
+                        val renamed = File(original.parent, safeName + "." + extension)
+                        original.renameTo(renamed)
+                        DownloadSaver.save(context, renamed)
+                        Toast.makeText(context, "Saved as " + renamed.name, Toast.LENGTH_SHORT).show()
                     }
-                )
-            }
-
-        }
+                    showRenameDialog = false
+                    pendingFile = null
+                }) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { showRenameDialog = false; pendingFile = null }) { Text("Cancel") } }
+        )
     }
 }
-
