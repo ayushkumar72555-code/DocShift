@@ -1,5 +1,6 @@
 package com.ayush.docshift.ui.screen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -11,58 +12,70 @@ import androidx.compose.ui.unit.dp
 fun HomeScreen(
     onSelect: (Screen) -> Unit
 ) {
+    val tiles = listOf(
+        "Reduce Image Size" to Screen.Compress,
+        "Resize Image" to Screen.Resize,
+        "Reduce PDF Size" to Screen.PdfCompress,
+        "Image → PDF" to Screen.ImageToPdf,
+        "PDF → Image" to Screen.PdfToImage
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("DocShift", style = MaterialTheme.typography.headlineMedium)
+        Spacer(Modifier.height(48.dp))
+
+        Text("DocShift", style = MaterialTheme.typography.headlineLarge)
+
+        Spacer(Modifier.height(8.dp))
+
+        Text(
+            "Image & PDF tools",
+            style = MaterialTheme.typography.bodyMedium
+        )
 
         Spacer(Modifier.height(32.dp))
 
-        Button(
-            onClick = { onSelect(Screen.Compress) },
-            modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Text("Size Reduce")
-        }
+            tiles.chunked(2).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    row.forEach { (title, screen) ->
+                        Card(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(130.dp)
+                                .clickable { onSelect(screen) },
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(18.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
+                        }
+                    }
 
-        Spacer(Modifier.height(16.dp))
-
-        Button(
-            onClick = { onSelect(Screen.Resize) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Image Resize")
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        Button(
-            onClick = { onSelect(Screen.PdfResize) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("PDF Resize")
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        Button(
-            onClick = { onSelect(Screen.ImageToPdf) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Image → PDF")
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        Button(
-            onClick = { onSelect(Screen.PdfToImage) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("PDF → Image")
+                    if (row.size == 1) {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
+            }
         }
     }
 }
