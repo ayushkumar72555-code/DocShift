@@ -4,12 +4,15 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
-import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.RandomAccessFile
 import kotlin.math.max
 import kotlin.math.min
 
@@ -27,7 +30,15 @@ object PdfCompressor {
     }
 
     private const val MAX_JPEG_QUALITY = 95
-    private const val MAX_COMPRESSION_PASSES = 28
+    private const val SCALE_STEP = 0.90f
+    private const val MAX_SCALE_PASSES = 12
+
+    private data class PageInfo(
+        val widthPoints: Int,
+        val heightPoints: Int,
+        val renderWidth: Int,
+        val renderHeight: Int
+    )
 
     fun compressToTarget(
         context: Context,
@@ -43,179 +54,268 @@ object PdfCompressor {
         }
 
         val targetBytes = targetKb.toLong() * 1024L
-        val source = renderPages(context, pdfUri, mode, onProgress)
+        val pages = inspectPages(context, pdfUri, mode)
+        if (pages.isEmpty()) throw IllegalArgumentException("PDF has no pages")
+
+        var scale = 1f
+        var lastCandidate: File? = null
 
         try {
-            var quality = MAX_JPEG_QUALITY
-            var scale = 1f
+            repeat(MAX_SCALE_PASSES) { pass ->
+                val candidate = findBestQualityAtScale(
+                    context,
+                    pdfUri,
+                    pages,
+                    scale,
+                    targetBytes,
+                    mode,
+                    if (pass == 0) onProgress else { _, _ -> }
+                )
 
-            for (pass in 0 until MAX_COMPRESSION_PASSES) {
-                val data = buildPdf(source, quality, scale)
+                if (candidate != null) {
+                    lastCandidate?.delete()
+                    lastCandidate = candidate
 
-                if (data.size.toLong() <= targetBytes) {
-                    val exact = padPdfToExactSize(data, targetBytes)
                     val output = File(
                         outputDir,
-                        "DocShift_compressed_${System.currentTimeMillis()}.pdf"
+                        "DocShift_compressed_" + System.currentTimeMillis() + ".pdf"
                     )
-                    FileOutputStream(output).use { it.write(exact) }
+                    writeExactSizePdf(candidate, output, targetBytes)
+                    candidate.delete()
+                    lastCandidate = null
                     return output
                 }
 
-                if (quality > mode.minQuality) {
-                    quality = max(mode.minQuality, quality - 5)
-                } else {
-                    scale *= 0.90f
-                }
+                scale *= SCALE_STEP
             }
 
             throw IllegalArgumentException(
-                "This PDF cannot reach " + targetKb + " KB in " + mode.label + " mode."
+                "This PDF cannot reach " + targetKb + " KB in " + mode.label +
+                    " mode. Try a larger target size or a stronger compression mode."
             )
         } finally {
-            source.forEach { it.recycle() }
+            lastCandidate?.delete()
         }
     }
 
-    private data class PageBitmap(
-        val bitmap: Bitmap,
-        val widthPoints: Int,
-        val heightPoints: Int
-    )
-
-    private fun renderPages(
+    private fun inspectPages(
         context: Context,
         uri: Uri,
-        mode: CompressionMode,
-        onProgress: (Int, Int) -> Unit
-    ): List<PageBitmap> {
+        mode: CompressionMode
+    ): List<PageInfo> {
         val pfd = context.contentResolver.openFileDescriptor(uri, "r")
             ?: throw IllegalArgumentException("Cannot open PDF")
         val renderer = PdfRenderer(pfd)
-        val pages = mutableListOf<PageBitmap>()
 
         try {
-            val total = renderer.pageCount
-
-            for (index in 0 until total) {
-                val page = renderer.openPage(index)
-                try {
-                    val scale = min(
-                        1f,
-                        mode.maxRenderDimension.toFloat() / max(page.width, page.height)
-                    )
-                    val width = max(1, (page.width * scale).toInt())
-                    val height = max(1, (page.height * scale).toInt())
-
-                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                    bitmap.eraseColor(Color.WHITE)
-
-                    page.render(
-                        bitmap,
-                        null,
-                        Matrix().apply { setScale(scale, scale) },
-                        PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY
-                    )
-
-                    pages += PageBitmap(bitmap, page.width, page.height)
-                } finally {
-                    page.close()
+            return buildList(renderer.pageCount) {
+                for (index in 0 until renderer.pageCount) {
+                    val page = renderer.openPage(index)
+                    try {
+                        val renderScale = min(
+                            1f,
+                            mode.maxRenderDimension.toFloat() / max(page.width, page.height)
+                        )
+                        add(
+                            PageInfo(
+                                page.width,
+                                page.height,
+                                max(1, (page.width * renderScale).toInt()),
+                                max(1, (page.height * renderScale).toInt())
+                            )
+                        )
+                    } finally {
+                        page.close()
+                    }
                 }
-                onProgress(index + 1, total)
             }
-
-            return pages
-        } catch (e: Exception) {
-            pages.forEach { it.bitmap.recycle() }
-            throw e
         } finally {
             renderer.close()
             pfd.close()
         }
     }
 
-    private fun buildPdf(pages: List<PageBitmap>, quality: Int, scale: Float): ByteArray {
+    private fun findBestQualityAtScale(
+        context: Context,
+        pdfUri: Uri,
+        pages: List<PageInfo>,
+        scale: Float,
+        targetBytes: Long,
+        mode: CompressionMode,
+        onProgress: (Int, Int) -> Unit
+    ): File? {
+        var low = mode.minQuality
+        var high = MAX_JPEG_QUALITY
+        var best: File? = null
+
+        while (low <= high) {
+            val quality = (low + high) / 2
+            val candidate = buildPdfFile(
+                context, pdfUri, pages, scale, quality, onProgress
+            )
+
+            if (candidate.length() <= targetBytes) {
+                best?.delete()
+                best = candidate
+                low = quality + 1
+            } else {
+                candidate.delete()
+                high = quality - 1
+            }
+        }
+
+        return best
+    }
+
+    private fun buildPdfFile(
+        context: Context,
+        pdfUri: Uri,
+        pages: List<PageInfo>,
+        scale: Float,
+        quality: Int,
+        onProgress: (Int, Int) -> Unit
+    ): File {
+        val temp = File.createTempFile("docshift_pdf_", ".pdf", context.cacheDir)
+        val pfd = context.contentResolver.openFileDescriptor(pdfUri, "r")
+            ?: throw IllegalArgumentException("Cannot open PDF")
+        val renderer = PdfRenderer(pfd)
         val document = PdfDocument()
 
         try {
-            pages.forEachIndexed { index, page ->
-                val width = max(1, (page.bitmap.width * scale).toInt())
-                val height = max(1, (page.bitmap.height * scale).toInt())
-
-                val scaled = if (scale == 1f) {
-                    page.bitmap
-                } else {
-                    Bitmap.createScaledBitmap(page.bitmap, width, height, true)
-                }
-
-                val compressed = ByteArrayOutputStream().use { stream ->
-                    scaled.compress(Bitmap.CompressFormat.JPEG, quality, stream)
-                    stream.toByteArray()
-                }
-
-                val compressedBitmap = android.graphics.BitmapFactory.decodeByteArray(
-                    compressed, 0, compressed.size
-                ) ?: throw IllegalStateException("Unable to compress PDF page")
+            for (index in pages.indices) {
+                val sourcePage = renderer.openPage(index)
+                var bitmap: Bitmap? = null
 
                 try {
-                    val info = PdfDocument.PageInfo.Builder(
-                        page.widthPoints, page.heightPoints, index + 1
-                    ).create()
-                    val outputPage = document.startPage(info)
+                    val width = max(1, (pages[index].renderWidth * scale).toInt())
+                    val height = max(1, (pages[index].renderHeight * scale).toInt())
 
+                    bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                    bitmap.eraseColor(Color.WHITE)
+
+                    val scaleX = width.toFloat() / sourcePage.width.toFloat()
+                    val scaleY = height.toFloat() / sourcePage.height.toFloat()
+
+                    sourcePage.render(
+                        bitmap,
+                        null,
+                        Matrix().apply { setScale(scaleX, scaleY) },
+                        PdfRenderer.Page.RENDER_MODE_FOR_PRINT
+                    )
+
+                    val pageInfo = PdfDocument.PageInfo.Builder(
+                        pages[index].widthPoints,
+                        pages[index].heightPoints,
+                        index + 1
+                    ).create()
+
+                    val outputPage = document.startPage(pageInfo)
                     try {
                         outputPage.canvas.drawColor(Color.WHITE)
                         outputPage.canvas.drawBitmap(
-                            compressedBitmap,
+                            bitmap,
                             null,
-                            android.graphics.RectF(
-                                0f, 0f,
-                                page.widthPoints.toFloat(),
-                                page.heightPoints.toFloat()
+                            RectF(
+                                0f,
+                                0f,
+                                pages[index].widthPoints.toFloat(),
+                                pages[index].heightPoints.toFloat()
                             ),
-                            android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
+                            Paint(Paint.FILTER_BITMAP_FLAG).apply { isDither = true }
                         )
                     } finally {
                         document.finishPage(outputPage)
                     }
                 } finally {
-                    compressedBitmap.recycle()
-                    if (scaled !== page.bitmap) scaled.recycle()
+                    bitmap?.recycle()
+                    sourcePage.close()
                 }
+
+                onProgress(index + 1, pages.size)
             }
 
-            val output = ByteArrayOutputStream()
-            document.writeTo(output)
-            return output.toByteArray()
+            FileOutputStream(temp).use { output -> document.writeTo(output) }
+            return temp
+        } catch (e: Exception) {
+            temp.delete()
+            throw e
         } finally {
             document.close()
+            renderer.close()
+            pfd.close()
         }
     }
 
-    private fun padPdfToExactSize(pdf: ByteArray, targetBytes: Long): ByteArray {
-        require(pdf.size.toLong() <= targetBytes)
-        if (pdf.size.toLong() == targetBytes) return pdf
+    private fun writeExactSizePdf(source: File, destination: File, targetBytes: Long) {
+        require(source.length() <= targetBytes) {
+            "Internal error: generated PDF is larger than the target"
+        }
 
-        val eof = byteArrayOf(
-            '%'.code.toByte(), '%'.code.toByte(), 'E'.code.toByte(),
-            'O'.code.toByte(), 'F'.code.toByte()
-        )
+        if (source.length() == targetBytes) {
+            source.copyTo(destination, overwrite = true)
+            return
+        }
 
-        var eofIndex = -1
-        for (index in pdf.size - eof.size downTo 0) {
-            if (eof.indices.all { offset -> pdf[index + offset] == eof[offset] }) {
-                eofIndex = index
-                break
+        val eofOffset = findLastEofOffset(source)
+        require(eofOffset >= 0) { "Generated PDF has no EOF marker" }
+
+        val paddingBytes = targetBytes - source.length()
+
+        FileInputStream(source).use { input ->
+            FileOutputStream(destination).use { output ->
+                copyExactly(input, output, eofOffset)
+
+                val buffer = ByteArray(8192) { 0x20 }
+                var remaining = paddingBytes
+                while (remaining > 0) {
+                    val count = min(remaining, buffer.size.toLong()).toInt()
+                    output.write(buffer, 0, count)
+                    remaining -= count
+                }
+
+                input.skipNBytes(5)
+                input.copyTo(output)
             }
         }
 
-        require(eofIndex >= 0) { "Generated PDF has no EOF marker" }
+        check(destination.length() == targetBytes) {
+            "Unable to create an exact target-size PDF"
+        }
+    }
 
-        val padding = (targetBytes - pdf.size).toInt()
-        val result = ByteArray(targetBytes.toInt())
-        System.arraycopy(pdf, 0, result, 0, eofIndex)
-        for (index in eofIndex until eofIndex + padding) result[index] = 0x20
-        System.arraycopy(pdf, eofIndex, result, eofIndex + padding, pdf.size - eofIndex)
-        return result
+    private fun findLastEofOffset(file: File): Long {
+        RandomAccessFile(file, "r").use { raf ->
+            val length = raf.length()
+            val searchStart = max(0L, length - 4096L)
+            raf.seek(searchStart)
+
+            val data = ByteArray((length - searchStart).toInt())
+            raf.readFully(data)
+
+            val marker = byteArrayOf(
+                '%'.code.toByte(), '%'.code.toByte(),
+                'E'.code.toByte(), 'O'.code.toByte(), 'F'.code.toByte()
+            )
+
+            for (i in data.size - marker.size downTo 0) {
+                if (marker.indices.all { data[i + it] == marker[it] }) {
+                    return searchStart + i
+                }
+            }
+        }
+        return -1L
+    }
+
+    private fun copyExactly(input: FileInputStream, output: FileOutputStream, bytes: Long) {
+        val buffer = ByteArray(8192)
+        var remaining = bytes
+
+        while (remaining > 0) {
+            val count = min(remaining, buffer.size.toLong()).toInt()
+            val read = input.read(buffer, 0, count)
+            if (read < 0) throw IllegalStateException("Unexpected end of PDF")
+            output.write(buffer, 0, read)
+            remaining -= read
+        }
     }
 }
