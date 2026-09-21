@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import com.ayush.docshift.util.BitmapUtils
+import java.io.FileNotFoundException
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -15,20 +16,43 @@ object ImageResizer {
 
     fun readDimensions(resolver: ContentResolver, uri: Uri): ImageDimensions {
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        val decoded = resolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it, null, options)
-        } ?: resolver.openFileDescriptor(uri, "r")?.use {
-            BitmapFactory.decodeFileDescriptor(it.fileDescriptor, null, options)
+
+        try {
+            resolver.openInputStream(uri)?.use { input ->
+                BitmapFactory.decodeStream(input, null, options)
+            }
+            if (options.outWidth > 0 && options.outHeight > 0) {
+                return ImageDimensions(options.outWidth, options.outHeight)
+            }
+        } catch (_: FileNotFoundException) {
+            // Fall through to file descriptor access.
+        } catch (_: SecurityException) {
+            // Fall through to file descriptor access.
         }
 
-        if (decoded == null) {
-            throw IllegalStateException("Unable to read image. The selected file may no longer be accessible.")
+        options.outWidth = 0
+        options.outHeight = 0
+
+        try {
+            resolver.openFileDescriptor(uri, "r")?.use { descriptor ->
+                BitmapFactory.decodeFileDescriptor(
+                    descriptor.fileDescriptor,
+                    null,
+                    options
+                )
+            }
+            if (options.outWidth > 0 && options.outHeight > 0) {
+                return ImageDimensions(options.outWidth, options.outHeight)
+            }
+        } catch (_: FileNotFoundException) {
+            // Handled below.
+        } catch (_: SecurityException) {
+            // Handled below.
         }
 
-        require(options.outWidth > 0 && options.outHeight > 0) {
-            "Unable to determine image dimensions"
-        }
-        return ImageDimensions(options.outWidth, options.outHeight)
+        throw IllegalStateException(
+            "Unable to read image. The selected file could not be decoded."
+        )
     }
 
     fun resize(
