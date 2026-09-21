@@ -60,7 +60,7 @@ fun SectionCard(title: String? = null, modifier: Modifier = Modifier, content: @
 }
 
 @Composable
-fun PrimaryAction(text: String, enabled: Boolean = true, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun PrimaryAction(text: String, enabled: Boolean = true, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         enabled = enabled,
@@ -70,7 +70,7 @@ fun PrimaryAction(text: String, enabled: Boolean = true, onClick: () -> Unit, mo
 }
 
 @Composable
-fun SecondaryAction(text: String, enabled: Boolean = true, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun SecondaryAction(text: String, enabled: Boolean = true, modifier: Modifier = Modifier, onClick: () -> Unit) {
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
