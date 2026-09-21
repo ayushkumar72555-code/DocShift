@@ -1,12 +1,11 @@
 package com.ayush.docshift.ui.screen
 
 import android.net.Uri
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun SharedActionChooserScreen(
@@ -16,54 +15,16 @@ fun SharedActionChooserScreen(
     onImageToPdf: () -> Unit,
     onBack: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    DocShiftScaffold(
+        title = "Choose an action",
+        subtitle = imageUris.size.toString() + " image" + if (imageUris.size == 1) "" else "s" + " received",
+        onBack = onBack
     ) {
-
-        Text(
-            "What do you want to do?",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Spacer(Modifier.height(24.dp))
-
-        Text("${imageUris.size} image(s) received")
-
-        Spacer(Modifier.height(32.dp))
-
-        Button(
-            onClick = onCompress,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Reduce Image Size")
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Button(
-            onClick = onResize,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Resize Images")
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        Button(
-            onClick = onImageToPdf,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Convert Images to PDF")
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        TextButton(onClick = onBack) {
-            Text("Cancel")
+        SectionCard {
+            Text("What would you like to do with these images?", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            PrimaryAction("Reduce image size", onClick = onCompress)
+            SecondaryAction("Resize images", onClick = onResize)
+            SecondaryAction("Convert images to PDF", onClick = onImageToPdf)
         }
     }
 }

@@ -6,61 +6,39 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun TutorialScreen(
-    onFinish: () -> Unit
-) {
+fun TutorialScreen(onFinish: () -> Unit) {
     val pages = listOf(
-        "Hi! This me Ayush 👋\n\nWelcome to DocShift.\nThis app helps you work with images and PDFs easily.",
-        "\uD83D\uDE0E Haan maine hi banaya hai!",
-        "📉 Size Reduce\n\nCompress images to an exact size like 20 KB, 50 KB, or 100 KB.",
-        "\uD83D\uDD28 Latest Update: Image Resize based on pixels, Centimters and Inches",
-        "🖼️ Image → PDF\n\nConvert one or multiple images into a single PDF file.",
-        "📄 PDF → Image\n\nExtract every page of a PDF as high-quality images.",
-        "🎉 Enjoy!\n\nYou’re all set. Use DocShift and make file handling effortless."
+        "Welcome to DocShift" to "A clean, offline workspace for everyday image and PDF tasks.",
+        "Reduce file size" to "Compress images to a target size such as 20 KB, 50 KB or 100 KB.",
+        "Resize images" to "Set dimensions in pixels, centimetres or inches with aspect-ratio control.",
+        "Work with PDFs" to "Create PDFs from images, export PDF pages, or reduce PDF file size.",
+        "Ready to go" to "Everything is processed locally on your device."
     )
-
     var page by remember { mutableStateOf(0) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(24.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-
-        Spacer(Modifier.height(20.dp))
-
-        Text(
-            text = pages[page],
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            Modifier.fillMaxWidth().weight(1f),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            if (page > 0) {
-                TextButton(onClick = { page-- }) {
-                    Text("Back")
-                }
-            }
-
-            Button(
-                onClick = {
-                    if (page == pages.lastIndex) {
-                        onFinish()
-                    } else {
-                        page++
-                    }
-                }
-            ) {
-                Text(if (page == pages.lastIndex) "Enjoy" else "Next")
+            Text(pages[page].first, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(14.dp))
+            Text(pages[page].second, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(24.dp))
+            Text((page + 1).toString() + " / " + pages.size, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (page > 0) OutlinedButton(onClick = { page-- }, Modifier.weight(1f)) { Text("Back") }
+            Button(onClick = { if (page == pages.lastIndex) onFinish() else page++ }, Modifier.weight(1f)) {
+                Text(if (page == pages.lastIndex) "Get started" else "Next")
             }
         }
     }
