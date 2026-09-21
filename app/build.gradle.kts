@@ -35,10 +35,6 @@ android {
     buildFeatures {
         compose = true
     }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
-    }
 }
 
 kotlin {
@@ -57,14 +53,13 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.foundation)
-    implementation("androidx.compose.material3:material3:1.2.1")
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
-    implementation(libs.material)
     implementation(libs.androidx.compose.runtime)
 
-    testImplementation(libs.junit)
-
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation(libs.material)
     implementation("androidx.core:core-splashscreen:1.0.1")
+
+    testImplementation(libs.junit)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
