@@ -46,7 +46,7 @@ fun ImageToPdfScreen(contentResolver: ContentResolver, cacheDir: File, initialUr
                     outputDir = cacheDir,
                     fileName = "DocShift_" + System.currentTimeMillis()
                 ) { current, _ ->
-                    withContext(Dispatchers.Main) { progress = current }
+                    scope.launch(Dispatchers.Main.immediate) { progress = current }
                 }
                 withContext(Dispatchers.Main) { resultFile = pdf }
             } catch (e: Exception) {
