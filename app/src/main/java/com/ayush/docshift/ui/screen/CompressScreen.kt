@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -75,7 +76,7 @@ fun CompressScreen(contentResolver: ContentResolver, cacheDir: File, initialUris
                     Text(imageUris.size.toString() + " image" + if (imageUris.size == 1) " selected" else "s selected", fontWeight = FontWeight.Medium)
                     if (originalSizes.isNotEmpty()) Text("Original total · " + FormatUtils.formatSize(originalSizes.sum()), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                SecondaryAction("Select images", !isProcessing) { picker.launch("image/*") }
+                SecondaryAction("Select images", !isProcessing) { picker.launch(arrayOf("image/*")) }
             }
             SectionCard("Target size") {
                 ExposedDropdownMenuBox(expanded, { expanded = !expanded }) {

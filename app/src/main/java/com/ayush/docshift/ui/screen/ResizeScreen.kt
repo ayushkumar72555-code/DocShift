@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -47,6 +48,30 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
     var progress by remember { mutableStateOf(0) }
     var isProcessing by remember { mutableStateOf(false) }
     var resultFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+
+    fun materializeUri(
+        resolver: ContentResolver,
+        uri: Uri,
+        cacheDir: File,
+        index: Int
+    ): Uri {
+        if (uri.scheme == "file") return uri
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            throw IllegalStateException("Unable to create temporary storage")
+        }
+
+        val output = File(cacheDir, "resize_input_${System.currentTimeMillis()}_$index.img")
+        resolver.openInputStream(uri)?.use { input ->
+            output.outputStream().use { outputStream -> input.copyTo(outputStream) }
+        } ?: throw IllegalStateException("The selected file could not be opened")
+
+        if (output.length() == 0L) {
+            output.delete()
+            throw IllegalStateException("The selected image is empty")
+        }
+
+        return Uri.fromFile(output)
+    }
 
     fun loadSelected(uris: List<Uri>) {
         resultFiles = emptyList()
@@ -87,30 +112,6 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
             }
         }
     }
-
-    fun materializeUri(
-        resolver: ContentResolver,
-        uri: Uri,
-        cacheDir: File,
-        index: Int
-    ): Uri {
-        if (uri.scheme == "file") return uri
-        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-            throw IllegalStateException("Unable to create temporary storage")
-        }
-
-        val output = File(cacheDir, "resize_input_\${System.currentTimeMillis()}_\$index.img")
-        resolver.openInputStream(uri)?.use { input ->
-            output.outputStream().use { outputStream -> input.copyTo(outputStream) }
-        } ?: throw IllegalStateException("The selected file could not be opened")
-
-        if (output.length() == 0L) {
-            output.delete()
-            throw IllegalStateException("The selected image is empty")
-        }
-
-        return Uri.fromFile(output)
-    }
     LaunchedEffect(initialUris) { if (initialUris.isNotEmpty()) loadSelected(initialUris) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) {
@@ -127,7 +128,7 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
                     firstDimensions?.let { Text("Original · " + it.width + " × " + it.height + " px", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     if (originalSizes.isNotEmpty()) Text("Original size · " + FormatUtils.formatSize(originalSizes.sum()), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                SecondaryAction("Select images", !isProcessing) { picker.launch("image/*") }
+                SecondaryAction("Select images", !isProcessing) { picker.launch(arrayOf("image/*")) }
             }
             SectionCard("Dimensions") {
                 ExposedDropdownMenuBox(unitExpanded, { unitExpanded = !unitExpanded }) {
