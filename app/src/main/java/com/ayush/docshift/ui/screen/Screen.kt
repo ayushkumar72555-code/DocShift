@@ -5,8 +5,8 @@ sealed class Screen {
     object Tutorial : Screen()
     object Compress : Screen()
     object Resize : Screen()
+    object PdfResize : Screen()
     object ImageToPdf : Screen()
     object PdfToImage : Screen()
     object SharedChooser : Screen()
-
 }
