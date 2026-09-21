@@ -20,12 +20,10 @@ import com.ayush.docshift.ui.screen.*
 import com.ayush.docshift.ui.theme.DocShiftTheme
 
 class MainActivity : ComponentActivity() {
-
     private val viewModel: DocShiftViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         viewModel.initialize(this, intent)
 
         setContent {
@@ -46,43 +44,25 @@ class MainActivity : ComponentActivity() {
                             targetState = currentScreen,
                             transitionSpec = {
                                 if (initialState == Screen.Home || initialState == Screen.Tutorial) {
-                                    slideInHorizontally(
-                                        initialOffsetX = { it },
-                                        animationSpec = tween(300)
-                                    ) with slideOutHorizontally(
-                                        targetOffsetX = { -it },
-                                        animationSpec = tween(300)
-                                    )
+                                    slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) with
+                                        slideOutHorizontally(targetOffsetX = { -it }, animationSpec = tween(300))
                                 } else {
-                                    slideInHorizontally(
-                                        initialOffsetX = { -it },
-                                        animationSpec = tween(300)
-                                    ) with slideOutHorizontally(
-                                        targetOffsetX = { it },
-                                        animationSpec = tween(300)
-                                    )
+                                    slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(300)) with
+                                        slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300))
                                 }
                             }
                         ) { target ->
                             when (target) {
                                 Screen.SharedChooser -> SharedActionChooserScreen(
                                     imageUris = uiState.sharedUris,
-                                    onCompress = {
-                                        viewModel.selectSharedAction(Screen.Compress)
-                                    },
-                                    onResize = {
-                                        viewModel.selectSharedAction(Screen.Resize)
-                                    },
-                                    onImageToPdf = {
-                                        viewModel.selectSharedAction(Screen.ImageToPdf)
-                                    },
+                                    onCompress = { viewModel.selectSharedAction(Screen.Compress) },
+                                    onResize = { viewModel.selectSharedAction(Screen.Resize) },
+                                    onImageToPdf = { viewModel.selectSharedAction(Screen.ImageToPdf) },
                                     onBack = viewModel::goHome
                                 )
 
                                 Screen.Tutorial -> TutorialScreen(
-                                    onFinish = {
-                                        viewModel.finishTutorial(this@MainActivity)
-                                    }
+                                    onFinish = { viewModel.finishTutorial(this@MainActivity) }
                                 )
 
                                 Screen.Home -> HomeScreen(
@@ -103,7 +83,7 @@ class MainActivity : ComponentActivity() {
                                     onBack = viewModel::goHome
                                 )
 
-                                Screen.PdfResize -> PdfResizeScreen(
+                                Screen.PdfCompress -> PdfCompressScreen(
                                     cacheDir = cacheDir,
                                     initialPdf = uiState.sharedUris.firstOrNull(),
                                     onBack = viewModel::goHome
