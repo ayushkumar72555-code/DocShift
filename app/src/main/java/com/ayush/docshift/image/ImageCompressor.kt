@@ -2,15 +2,19 @@ package com.ayush.docshift.image
 
 import android.content.ContentResolver
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
+import com.ayush.docshift.util.BitmapUtils
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.min
 
 object ImageCompressor {
+    private const val MAX_DECODE_DIMENSION = 4096
+    private const val MIN_QUALITY = 5
+    private const val MAX_QUALITY = 100
 
     fun compressToTarget(
         resolver: ContentResolver,
@@ -18,20 +22,13 @@ object ImageCompressor {
         targetKb: Int,
         cacheDir: File
     ): File {
-
-        val originalBitmap = resolver.openInputStream(uri)!!.use {
-            BitmapFactory.decodeStream(it)
+        require(targetKb > 0) { "Target size must be greater than 0" }
+        val bitmap = BitmapUtils.decodeSafe(resolver, uri, MAX_DECODE_DIMENSION)
+        return try {
+            compressBitmapToTarget(bitmap, targetKb, cacheDir, "DocShift")
+        } finally {
+            bitmap.recycle()
         }
-
-        // 🔴 THIS WAS MISSING
-        val workingBitmap = resizeForTarget(originalBitmap, targetKb)
-
-        return compressBitmapToTarget(
-            bitmap = workingBitmap,
-            targetKb = targetKb,
-            cacheDir = cacheDir,
-            filePrefix = "DocShift"
-        )
     }
 
     fun compressBitmapToTarget(
@@ -40,65 +37,105 @@ object ImageCompressor {
         cacheDir: File,
         filePrefix: String = "DocShift"
     ): File {
-        require(targetKb > 0) {
-            "Target size must be greater than 0"
-        }
+        require(targetKb > 0) { "Target size must be greater than 0" }
 
-        var low = 5
-        var high = 100
+        var currentBitmap = resizeForTarget(bitmap, targetKb)
+        var bestData: ByteArray? = null
+        var bestDifference = Long.MAX_VALUE
+
+        try {
+            repeat(5) {
+                val data = findClosestJpeg(currentBitmap, targetKb)
+                val difference = abs(data.size - targetKb * 1024L)
+
+                if (difference < bestDifference) {
+                    bestData = data
+                    bestDifference = difference
+                }
+
+                if (data.size <= targetKb * 1024L) return@repeat
+
+                val scale = min(
+                    0.85f,
+                    kotlin.math.sqrt(targetKb.toDouble() / (data.size / 1024.0))
+                        .coerceIn(0.45, 0.85)
+                        .toFloat()
+                )
+                val newWidth = max(1, (currentBitmap.width * scale).toInt())
+                val newHeight = max(1, (currentBitmap.height * scale).toInt())
+
+                if (newWidth == currentBitmap.width && newHeight == currentBitmap.height) {
+                    return@repeat
+                }
+
+                val nextBitmap = Bitmap.createScaledBitmap(
+                    currentBitmap,
+                    newWidth,
+                    newHeight,
+                    true
+                )
+                if (currentBitmap !== bitmap) currentBitmap.recycle()
+                currentBitmap = nextBitmap
+            }
+
+            val outFile = File(
+                cacheDir,
+                "${filePrefix}_${targetKb}KB_${System.currentTimeMillis()}.jpg"
+            )
+            FileOutputStream(outFile).use { it.write(bestData!!) }
+            return outFile
+        } finally {
+            if (currentBitmap !== bitmap) currentBitmap.recycle()
+        }
+    }
+
+    private fun findClosestJpeg(bitmap: Bitmap, targetKb: Int): ByteArray {
+        var low = MIN_QUALITY
+        var high = MAX_QUALITY
         var best: ByteArray? = null
-        var bestDifference = Int.MAX_VALUE
+        var bestDifference = Long.MAX_VALUE
 
         while (low <= high) {
-            val mid = (low + high) / 2
-            val stream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, mid, stream)
-            val data = stream.toByteArray()
-            val sizeKb = data.size / 1024
-            val difference = abs(sizeKb - targetKb)
+            val quality = (low + high) / 2
+            val data = ByteArrayOutputStream().use { stream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
+                stream.toByteArray()
+            }
+            val difference = abs(data.size - targetKb * 1024L)
 
-            if (best == null || difference < bestDifference || sizeKb <= targetKb) {
+            if (difference < bestDifference) {
                 best = data
                 bestDifference = difference
             }
 
-            if (difference <= 2) {
-                break
-            }
-
-            if (sizeKb > targetKb) {
-                high = mid - 1
-            } else {
-                low = mid + 1
-            }
+            if (data.size > targetKb * 1024L) high = quality - 1
+            else low = quality + 1
         }
 
-        val outFile = File(cacheDir, "${filePrefix}_${targetKb}KB_${System.currentTimeMillis()}.jpg")
-        FileOutputStream(outFile).use { it.write(best!!) }
-
-        return outFile
+        return best!!
     }
 
-    // 🔴 THIS FUNCTION IS THE KEY
     private fun resizeForTarget(bitmap: Bitmap, targetKb: Int): Bitmap {
-
-        val maxDim = when {
-            targetKb <= 20 -> 300
-            targetKb <= 50 -> 600
-            targetKb <= 100 -> 1024
-            else -> return bitmap
+        val maxDimension = when {
+            targetKb <= 20 -> 600
+            targetKb <= 50 -> 900
+            targetKb <= 100 -> 1400
+            targetKb <= 200 -> 2000
+            targetKb <= 500 -> 2800
+            else -> MAX_DECODE_DIMENSION
         }
 
         val ratio = min(
-            maxDim.toFloat() / bitmap.width,
-            maxDim.toFloat() / bitmap.height
+            maxDimension.toFloat() / bitmap.width,
+            maxDimension.toFloat() / bitmap.height
         )
-
         if (ratio >= 1f) return bitmap
 
-        val newWidth = (bitmap.width * ratio).toInt()
-        val newHeight = (bitmap.height * ratio).toInt()
-
-        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+        return Bitmap.createScaledBitmap(
+            bitmap,
+            max(1, (bitmap.width * ratio).toInt()),
+            max(1, (bitmap.height * ratio).toInt()),
+            true
+        )
     }
 }
