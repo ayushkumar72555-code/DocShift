@@ -84,7 +84,7 @@ fun ProgressBlock(progress: Int, total: Int, label: String) {
     if (total <= 0) return
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         LinearProgressIndicator(
-            progress = { (progress.toFloat() / total.toFloat()).coerceIn(0f, 1f) },
+            progress = (progress.toFloat() / total.toFloat()).coerceIn(0f, 1f),
             modifier = Modifier.fillMaxWidth()
         )
         Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
