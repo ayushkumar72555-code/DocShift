@@ -10,15 +10,28 @@ import java.io.FileOutputStream
 object ImageToPdfConverter {
     private const val MAX_BITMAP_DIMENSION = 4096
 
-    fun convert(resolver: ContentResolver, imageUris: List<Uri>, outputDir: File, fileName: String): File {
+    fun convert(
+        resolver: ContentResolver,
+        imageUris: List<Uri>,
+        outputDir: File,
+        fileName: String,
+        onProgress: (current: Int, total: Int) -> Unit = { _, _ -> }
+    ): File {
         require(imageUris.isNotEmpty()) { "No images provided" }
-        if (!outputDir.exists() && !outputDir.mkdirs()) throw IllegalStateException("Unable to create output directory")
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            throw IllegalStateException("Unable to create output directory")
+        }
+
         val pdfDocument = PdfDocument()
         try {
             imageUris.forEachIndexed { index, uri ->
                 val bitmap = BitmapUtils.decodeSafe(resolver, uri, MAX_BITMAP_DIMENSION)
                 try {
-                    val pageInfo = PdfDocument.PageInfo.Builder(bitmap.width, bitmap.height, index + 1).create()
+                    val pageInfo = PdfDocument.PageInfo.Builder(
+                        bitmap.width,
+                        bitmap.height,
+                        index + 1
+                    ).create()
                     val page = pdfDocument.startPage(pageInfo)
                     try {
                         page.canvas.drawBitmap(bitmap, 0f, 0f, null)
@@ -28,9 +41,13 @@ object ImageToPdfConverter {
                 } finally {
                     bitmap.recycle()
                 }
+                onProgress(index + 1, imageUris.size)
             }
-            val outputFile = File(outputDir, "${fileName}.pdf")
-            FileOutputStream(outputFile).use { output -> pdfDocument.writeTo(output) }
+
+            val outputFile = File(outputDir, "$fileName.pdf")
+            FileOutputStream(outputFile).use { output ->
+                pdfDocument.writeTo(output)
+            }
             return outputFile
         } finally {
             pdfDocument.close()
