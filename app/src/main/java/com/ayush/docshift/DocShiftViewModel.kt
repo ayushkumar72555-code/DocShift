@@ -104,7 +104,7 @@ class DocShiftViewModel : ViewModel() {
                             Screen.SharedChooser to listOf(it)
 
                         intent.type == "application/pdf" ->
-                            Screen.PdfToImage to listOf(it)
+                            Screen.PdfResize to listOf(it)
 
                         else -> null
                     }
