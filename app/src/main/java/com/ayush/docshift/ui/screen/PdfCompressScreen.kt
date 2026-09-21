@@ -37,10 +37,13 @@ fun PdfCompressScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
     val presets = listOf("100", "200", "500", "1000", "2000")
+    val modes = PdfCompressor.CompressionMode.entries
 
     var selectedPdf by remember { mutableStateOf(initialPdf) }
     var targetSize by remember { mutableStateOf("500") }
     var expanded by remember { mutableStateOf(false) }
+    var modeExpanded by remember { mutableStateOf(false) }
+    var compressionMode by remember { mutableStateOf(PdfCompressor.CompressionMode.Balanced) }
     var originalSize by remember { mutableStateOf(0L) }
     var progress by remember { mutableStateOf(0) }
     var totalPages by remember { mutableStateOf(0) }
@@ -68,15 +71,10 @@ fun PdfCompressScreen(
     ) { uri -> uri?.let(::selectPdf) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-            Text("← Back")
-        }
+        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("← Back") }
 
         Spacer(Modifier.height(28.dp))
         Text("Reduce PDF Size", style = MaterialTheme.typography.headlineMedium)
@@ -86,9 +84,7 @@ fun PdfCompressScreen(
             onClick = { picker.launch("application/pdf") },
             enabled = !isProcessing,
             modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Select PDF")
-        }
+        ) { Text("Select PDF") }
 
         selectedPdf?.let {
             Spacer(Modifier.height(8.dp))
@@ -97,10 +93,46 @@ fun PdfCompressScreen(
 
         if (originalSize > 0) {
             Spacer(Modifier.height(8.dp))
-            Text("Original size: ${FormatUtils.formatSize(originalSize)}")
+            Text("Original size: " + FormatUtils.formatSize(originalSize))
         }
 
         Spacer(Modifier.height(20.dp))
+
+        ExposedDropdownMenuBox(
+            expanded = modeExpanded,
+            onExpandedChange = { modeExpanded = !modeExpanded }
+        ) {
+            OutlinedTextField(
+                value = compressionMode.label,
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                label = { Text("Compression type") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(modeExpanded) }
+            )
+
+            ExposedDropdownMenu(
+                expanded = modeExpanded,
+                onDismissRequest = { modeExpanded = false }
+            ) {
+                modes.forEach { mode ->
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(mode.label)
+                                Text(mode.description, style = MaterialTheme.typography.bodySmall)
+                            }
+                        },
+                        onClick = {
+                            compressionMode = mode
+                            modeExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
 
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -122,7 +154,7 @@ fun PdfCompressScreen(
             ) {
                 presets.forEach { preset ->
                     DropdownMenuItem(
-                        text = { Text("$preset KB") },
+                        text = { Text(preset + " KB") },
                         onClick = {
                             targetSize = preset
                             expanded = false
@@ -139,7 +171,7 @@ fun PdfCompressScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(8.dp))
-            Text("Processing page $progress of $totalPages")
+            Text("Processing page " + progress + " of " + totalPages)
         }
 
         Spacer(Modifier.height(20.dp))
@@ -168,17 +200,18 @@ fun PdfCompressScreen(
                                 context = context,
                                 pdfUri = uri,
                                 targetKb = kb,
-                                outputDir = File(cacheDir, "compressed_pdfs")
+                                outputDir = File(cacheDir, "compressed_pdfs"),
+                                mode = compressionMode
                             ) { current, total ->
                                 progress = current
                                 totalPages = total
                             }
                         }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
                         Toast.makeText(
                             context,
-                            "PDF compression failed",
-                            Toast.LENGTH_SHORT
+                            e.message ?: "PDF compression failed",
+                            Toast.LENGTH_LONG
                         ).show()
                     } finally {
                         isProcessing = false
@@ -195,9 +228,9 @@ fun PdfCompressScreen(
             val saved = originalSize - file.length()
             val percent = if (originalSize > 0) saved * 100 / originalSize else 0
 
-            Text("Final size: ${FormatUtils.formatSize(file.length())}")
+            Text("Final size: " + FormatUtils.formatSize(file.length()))
             Text(
-                "Saved: ${FormatUtils.formatSize(saved)} ($percent%)",
+                "Saved: " + FormatUtils.formatSize(saved) + " (" + percent + "%)",
                 fontWeight = FontWeight.Bold
             )
 
@@ -209,9 +242,7 @@ fun PdfCompressScreen(
                     Toast.makeText(context, "Saved to Downloads", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Save PDF")
-            }
+            ) { Text("Save PDF") }
 
             Spacer(Modifier.height(8.dp))
 
@@ -221,15 +252,13 @@ fun PdfCompressScreen(
                         context,
                         FileProvider.getUriForFile(
                             context,
-                            "${context.packageName}.provider",
+                            context.packageName + ".provider",
                             file
                         )
                     )
                 },
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Share PDF")
-            }
+            ) { Text("Share PDF") }
         }
     }
 }
