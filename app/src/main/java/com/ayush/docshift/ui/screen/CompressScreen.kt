@@ -50,7 +50,21 @@ fun CompressScreen(contentResolver: ContentResolver, cacheDir: File, initialUris
     }
 
     LaunchedEffect(initialUris) { if (initialUris.isNotEmpty()) selectImages(initialUris) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { if (it.isNotEmpty()) selectImages(it) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) {
+            uris.forEach { uri ->
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        uri,
+                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (_: SecurityException) {
+                    // Some providers grant temporary access only.
+                }
+            }
+            selectImages(uris)
+        }
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
         DocShiftScaffold("Reduce image size", "Target a specific file size", onBack) {
