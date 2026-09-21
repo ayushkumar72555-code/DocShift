@@ -137,7 +137,11 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
                         val output = mutableListOf<File>()
                         imageUris.forEachIndexed { index, uri ->
                             val bitmap = ImageResizer.resize(contentResolver, uri, width, height, unit, dpiValue, maintainAspectRatio)
-                            output += ImageCompressor.compressBitmapToTarget(bitmap, targetKb, cacheDir, "DocShift_resize")
+                            try {
+                                output += ImageCompressor.compressBitmapToTarget(bitmap, targetKb, cacheDir, "DocShift_resize")
+                            } finally {
+                                if (!bitmap.isRecycled) bitmap.recycle()
+                            }
                             withContext(Dispatchers.Main) { progress = index + 1 }
                         }
                         withContext(Dispatchers.Main) { resultFiles = output }
