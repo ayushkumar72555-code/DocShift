@@ -11,9 +11,9 @@ import java.io.File
 object DownloadSaver {
 
     fun save(context: Context, file: File): Uri? {
+        require(file.isFile) { "File does not exist: ${file.name}" }
 
         val extension = file.extension.lowercase()
-
         val mimeType = when (extension) {
             "jpg", "jpeg" -> "image/jpeg"
             "png" -> "image/png"
@@ -22,69 +22,61 @@ object DownloadSaver {
         }
 
         return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-
             val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, file.name) // 🔴 KEEP ORIGINAL NAME
+                put(MediaStore.Downloads.DISPLAY_NAME, file.name)
                 put(MediaStore.Downloads.MIME_TYPE, mimeType)
-                put(
-                    MediaStore.Downloads.RELATIVE_PATH,
-                    Environment.DIRECTORY_DOWNLOADS + "/DocShift"
-                )
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/DocShift")
+                put(MediaStore.Downloads.IS_PENDING, 1)
             }
 
             val resolver = context.contentResolver
-            val uri = resolver.insert(
-                MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-                values
-            )
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: throw IllegalStateException("Unable to create Downloads entry")
 
-            resolver.openOutputStream(uri!!)?.use { output ->
-                file.inputStream().use { input ->
-                    input.copyTo(output)
-                }
+            try {
+                resolver.openOutputStream(uri)?.use { output ->
+                    file.inputStream().use { input -> input.copyTo(output) }
+                } ?: throw IllegalStateException("Unable to open Downloads output")
+
+                resolver.update(
+                    uri,
+                    ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) },
+                    null,
+                    null
+                )
+                uri
+            } catch (e: Exception) {
+                resolver.delete(uri, null, null)
+                throw e
             }
-
-            uri
         } else {
-
-            val downloadsDir =
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             val appDir = File(downloadsDir, "DocShift")
-            if (!appDir.exists()) appDir.mkdirs()
-
-            val outFile = File(appDir, file.name) // 🔴 KEEP ORIGINAL NAME
+            if (!appDir.exists() && !appDir.mkdirs()) {
+                throw IllegalStateException("Unable to create Downloads/DocShift")
+            }
+            val outFile = File(appDir, file.name)
             file.copyTo(outFile, overwrite = true)
-
             Uri.fromFile(outFile)
         }
     }
 
     fun share(context: Context, uri: Uri) {
-        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+        val intent = Intent(Intent.ACTION_SEND).apply {
             type = context.contentResolver.getType(uri) ?: "*/*"
-            putExtra(android.content.Intent.EXTRA_STREAM, uri)
-            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(
-            android.content.Intent.createChooser(intent, "Share file")
-        )
-    }
-    fun shareMultiple(context: Context, uris: List<Uri>) {
-        if (uris.isEmpty()) return
-
-        val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
-            type = "*/*"
-            putParcelableArrayListExtra(
-                Intent.EXTRA_STREAM,
-                ArrayList(uris)
-            )
+            putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-
-        context.startActivity(
-            Intent.createChooser(intent, "Share images")
-        )
+        context.startActivity(Intent.createChooser(intent, "Share file"))
     }
 
+    fun shareMultiple(context: Context, uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+            type = "*/*"
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, "Share images"))
+    }
 }
