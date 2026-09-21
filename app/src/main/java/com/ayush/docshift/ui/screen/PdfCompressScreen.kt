@@ -115,8 +115,10 @@ fun PdfCompressScreen(cacheDir: File, initialPdf: Uri? = null, onBack: () -> Uni
                     try {
                         resultFile = withContext(Dispatchers.IO) {
                             PdfCompressor.compressToTarget(context, uri, kb, File(cacheDir, "compressed_pdfs"), compressionMode) { current, total ->
-                                progress = current
-                                totalPages = total
+                                scope.launch(Dispatchers.Main.immediate) {
+                                    progress = current
+                                    totalPages = total
+                                }
                             }
                         }
                     } catch (e: Exception) {
