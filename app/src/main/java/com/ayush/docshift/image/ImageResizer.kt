@@ -15,9 +15,15 @@ object ImageResizer {
 
     fun readDimensions(resolver: ContentResolver, uri: Uri): ImageDimensions {
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(uri)?.use {
+        val decoded = resolver.openInputStream(uri)?.use {
             BitmapFactory.decodeStream(it, null, options)
-        } ?: error("Unable to read image")
+        } ?: resolver.openFileDescriptor(uri, "r")?.use {
+            BitmapFactory.decodeFileDescriptor(it.fileDescriptor, null, options)
+        }
+
+        if (decoded == null && (options.outWidth <= 0 || options.outHeight <= 0)) {
+            throw IllegalStateException("Unable to read image. The selected file may no longer be accessible.")
+        }
 
         require(options.outWidth > 0 && options.outHeight > 0) {
             "Unable to determine image dimensions"
