@@ -103,6 +103,12 @@ class MainActivity : ComponentActivity() {
                                     onBack = viewModel::goHome
                                 )
 
+                                Screen.PdfResize -> PdfResizeScreen(
+                                    cacheDir = cacheDir,
+                                    initialPdf = uiState.sharedUris.firstOrNull(),
+                                    onBack = viewModel::goHome
+                                )
+
                                 Screen.ImageToPdf -> ImageToPdfScreen(
                                     contentResolver = contentResolver,
                                     cacheDir = cacheDir,
