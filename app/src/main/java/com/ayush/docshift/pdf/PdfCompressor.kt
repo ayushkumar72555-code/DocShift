@@ -54,6 +54,26 @@ object PdfCompressor {
         }
 
         val targetBytes = targetKb.toLong() * 1024L
+        val sourceSize = context.contentResolver.openAssetFileDescriptor(pdfUri, "r")?.use { it.length } ?: -1L
+
+        if (sourceSize >= 0L && sourceSize <= targetBytes) {
+            val output = File(
+                outputDir,
+                "DocShift_compressed_" + System.currentTimeMillis() + ".pdf"
+            )
+            val source = File.createTempFile("docshift_source_", ".pdf", context.cacheDir)
+            try {
+                context.contentResolver.openInputStream(pdfUri)?.use { input ->
+                    FileOutputStream(source).use { outputStream -> input.copyTo(outputStream) }
+                } ?: throw IllegalArgumentException("Cannot open PDF")
+                writeExactSizePdf(source, output, targetBytes)
+                onProgress(1, 1)
+                return output
+            } finally {
+                source.delete()
+            }
+        }
+
         val pages = inspectPages(context, pdfUri, mode)
         if (pages.isEmpty()) throw IllegalArgumentException("PDF has no pages")
 
