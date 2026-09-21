@@ -24,11 +24,7 @@ object ImageCompressor {
     ): File {
         require(targetKb > 0) { "Target size must be greater than 0" }
         val bitmap = BitmapUtils.decodeSafe(resolver, uri, MAX_DECODE_DIMENSION)
-        return try {
-            compressBitmapToTarget(bitmap, targetKb, cacheDir, "DocShift")
-        } finally {
-            bitmap.recycle()
-        }
+        return compressBitmapToTarget(bitmap, targetKb, cacheDir, "DocShift")
     }
 
     fun compressBitmapToTarget(
@@ -86,6 +82,7 @@ object ImageCompressor {
             return outFile
         } finally {
             if (currentBitmap !== bitmap) currentBitmap.recycle()
+            if (!bitmap.isRecycled) bitmap.recycle()
         }
     }
 
