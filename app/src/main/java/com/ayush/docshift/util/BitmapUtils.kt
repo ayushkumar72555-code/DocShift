@@ -10,8 +10,14 @@ object BitmapUtils {
     fun decodeSafe(resolver: ContentResolver, uri: Uri, maxDimension: Int = 4096): Bitmap {
         require(maxDimension > 0) { "maxDimension must be greater than 0" }
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-            ?: throw IllegalStateException("Unable to open image input stream")
+        val boundsDecoded = resolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, bounds)
+        } ?: resolver.openFileDescriptor(uri, "r")?.use {
+            BitmapFactory.decodeFileDescriptor(it.fileDescriptor, null, bounds)
+        }
+        if (boundsDecoded == null) {
+            throw IllegalStateException("Unable to open image input stream")
+        }
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
             throw IllegalStateException("Unable to determine image dimensions")
         }
@@ -25,7 +31,12 @@ object BitmapUtils {
         resolver.openInputStream(uri)?.use {
             return BitmapFactory.decodeStream(it, null, options)
                 ?: throw IllegalStateException("Failed to decode bitmap")
-        } ?: throw IllegalStateException("Unable to open image input stream")
+        }
+        resolver.openFileDescriptor(uri, "r")?.use {
+            return BitmapFactory.decodeFileDescriptor(it.fileDescriptor, null, options)
+                ?: throw IllegalStateException("Failed to decode bitmap")
+        }
+        throw IllegalStateException("Unable to open image input stream")
     }
 
     private fun calculateInSampleSize(width: Int, height: Int, maxDimension: Int): Int {
