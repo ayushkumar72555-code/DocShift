@@ -1,11 +1,11 @@
 package com.ayush.docshift
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
@@ -14,71 +14,40 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.with
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
-import com.ayush.docshift.storage.FirstLaunchStore
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.lifecycleScope
 import com.ayush.docshift.ui.screen.*
 import com.ayush.docshift.ui.theme.DocShiftTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
+    private val viewModel: DocShiftViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        viewModel.initialize(this, intent)
 
         setContent {
             DocShiftTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-
-                    val context = this
-                    val scope = rememberCoroutineScope()
-
-                    /* ---------- Handle shared content ---------- */
-
-                    val sharedData = remember {
-                        extractSharedContent(intent)
-                    }
-
-                    /* ---------- Screen state ---------- */
-
-                    var currentScreen by remember {
-                        mutableStateOf<Screen?>(null)
-                    }
-
-                    /* ---------- Decide initial screen ---------- */
-
-                    LaunchedEffect(Unit) {
-                        currentScreen = when {
-                            FirstLaunchStore.isFirstLaunch(context) ->
-                                Screen.Tutorial
-
-                            sharedData != null ->
-                                sharedData.first
-
-                            else ->
-                                Screen.Home
-                        }
-                    }
-
-                    /* ---------- System back ---------- */
+                    val uiState by viewModel.uiState.collectAsState()
+                    val screen = uiState.screen
 
                     BackHandler(
-                        enabled = currentScreen != Screen.Home &&
-                                currentScreen != Screen.Tutorial
+                        enabled = screen != Screen.Home && screen != Screen.Tutorial
                     ) {
-                        currentScreen = Screen.Home
+                        viewModel.goBack()
                     }
 
-                    /* ---------- UI ---------- */
-
-                    currentScreen?.let { screen ->
-
+                    screen?.let { currentScreen ->
                         @OptIn(ExperimentalAnimationApi::class)
                         AnimatedContent(
-                            targetState = screen,
+                            targetState = currentScreen,
                             transitionSpec = {
-                                if (initialState == Screen.Home ||
-                                    initialState == Screen.Tutorial
-                                ) {
+                                if (initialState == Screen.Home || initialState == Screen.Tutorial) {
                                     slideInHorizontally(
                                         initialOffsetX = { it },
                                         animationSpec = tween(300)
@@ -97,81 +66,58 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         ) { target ->
-
                             when (target) {
-                                Screen.SharedChooser -> {
-                                    val uris = sharedData?.second ?: emptyList()
-                                    SharedActionChooserScreen(
-                                        imageUris = uris,
-                                        onCompress = {
-                                            currentScreen = Screen.Compress
-                                        },
-                                        onResize = {
-                                            currentScreen = Screen.Resize
-                                        },
-                                        onImageToPdf = {
-                                            currentScreen = Screen.ImageToPdf
-                                        },
-                                        onBack = {
-                                            currentScreen = Screen.Home
-                                        }
-                                    )
-                                }
+                                Screen.SharedChooser -> SharedActionChooserScreen(
+                                    imageUris = uiState.sharedUris,
+                                    onCompress = {
+                                        viewModel.selectSharedAction(Screen.Compress)
+                                    },
+                                    onResize = {
+                                        viewModel.selectSharedAction(Screen.Resize)
+                                    },
+                                    onImageToPdf = {
+                                        viewModel.selectSharedAction(Screen.ImageToPdf)
+                                    },
+                                    onBack = viewModel::goHome
+                                )
 
                                 Screen.Tutorial -> TutorialScreen(
                                     onFinish = {
-                                        scope.launch {
-                                            FirstLaunchStore.setLaunched(context)
-                                            currentScreen = Screen.Home
-                                        }
+                                        viewModel.finishTutorial(this@MainActivity)
                                     }
                                 )
 
                                 Screen.Home -> HomeScreen(
-                                    onSelect = { selected ->
-                                        currentScreen = selected
-                                    }
+                                    onSelect = viewModel::selectFromHome
                                 )
 
-                                Screen.Compress -> {
-                                    val uris = sharedData?.second ?: emptyList()
-                                    CompressScreen(
-                                        contentResolver = contentResolver,
-                                        cacheDir = cacheDir,
-                                        initialUris = uris,
-                                        onBack = { currentScreen = Screen.Home }
-                                    )
-                                }
+                                Screen.Compress -> CompressScreen(
+                                    contentResolver = contentResolver,
+                                    cacheDir = cacheDir,
+                                    initialUris = uiState.sharedUris,
+                                    onBack = viewModel::goHome
+                                )
 
-                                Screen.Resize -> {
-                                    val uris = sharedData?.second ?: emptyList()
-                                    ResizeScreen(
-                                        contentResolver = contentResolver,
-                                        cacheDir = cacheDir,
-                                        initialUris = uris,
-                                        onBack = { currentScreen = Screen.Home }
-                                    )
-                                }
+                                Screen.Resize -> ResizeScreen(
+                                    contentResolver = contentResolver,
+                                    cacheDir = cacheDir,
+                                    initialUris = uiState.sharedUris,
+                                    onBack = viewModel::goHome
+                                )
 
-                                Screen.ImageToPdf -> {
-                                    val uris = sharedData?.second ?: emptyList()
-                                    ImageToPdfScreen(
-                                        contentResolver = contentResolver,
-                                        cacheDir = cacheDir,
-                                        initialUris = uris,
-                                        onBack = { currentScreen = Screen.Home }
-                                    )
-                                }
+                                Screen.ImageToPdf -> ImageToPdfScreen(
+                                    contentResolver = contentResolver,
+                                    cacheDir = cacheDir,
+                                    initialUris = uiState.sharedUris,
+                                    onBack = viewModel::goHome
+                                )
 
-                                Screen.PdfToImage -> {
-                                    val uri = sharedData?.second?.firstOrNull()
-                                    PdfToImageScreen(
-                                        contentResolver = contentResolver,
-                                        cacheDir = cacheDir,
-                                        initialPdf = uri,
-                                        onBack = { currentScreen = Screen.Home }
-                                    )
-                                }
+                                Screen.PdfToImage -> PdfToImageScreen(
+                                    contentResolver = contentResolver,
+                                    cacheDir = cacheDir,
+                                    initialPdf = uiState.sharedUris.firstOrNull(),
+                                    onBack = viewModel::goHome
+                                )
                             }
                         }
                     }
@@ -180,38 +126,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /* ---------- Extract shared data ---------- */
-
-    private fun extractSharedContent(
-        intent: Intent
-    ): Pair<Screen, List<Uri>>? {
-
-        return when (intent.action) {
-
-            Intent.ACTION_SEND -> {
-                val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                uri?.let {
-                    when {
-                        intent.type?.startsWith("image") == true ->
-                            Screen.SharedChooser to listOf(it)
-
-                        intent.type == "application/pdf" ->
-                            Screen.PdfToImage to listOf(it)
-
-                        else -> null
-                    }
-                }
-            }
-
-            Intent.ACTION_SEND_MULTIPLE -> {
-                val uris =
-                    intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
-                uris?.let {
-                    Screen.SharedChooser to uris
-                }
-            }
-
-            else -> null
-        }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        viewModel.handleNewIntent(intent)
     }
 }
