@@ -4,38 +4,25 @@ import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import com.ayush.docshift.util.BitmapUtils
 import kotlin.math.max
 import kotlin.math.roundToInt
 
 object ImageResizer {
+    data class ImageDimensions(val width: Int, val height: Int)
 
-    data class ImageDimensions(
-        val width: Int,
-        val height: Int
-    )
+    enum class ResizeUnit { Pixels, Centimeters, Inches }
 
-    enum class ResizeUnit {
-        Pixels,
-        Centimeters,
-        Inches
-    }
-
-    fun readDimensions(
-        resolver: ContentResolver,
-        uri: Uri
-    ): ImageDimensions {
-        val options = BitmapFactory.Options().apply {
-            inJustDecodeBounds = true
-        }
-
+    fun readDimensions(resolver: ContentResolver, uri: Uri): ImageDimensions {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         resolver.openInputStream(uri)?.use {
             BitmapFactory.decodeStream(it, null, options)
-        }
+        } ?: error("Unable to read image")
 
-        return ImageDimensions(
-            width = options.outWidth,
-            height = options.outHeight
-        )
+        require(options.outWidth > 0 && options.outHeight > 0) {
+            "Unable to determine image dimensions"
+        }
+        return ImageDimensions(options.outWidth, options.outHeight)
     }
 
     fun resize(
@@ -47,32 +34,33 @@ object ImageResizer {
         dpi: Int,
         maintainAspectRatio: Boolean
     ): Bitmap {
-        val originalBitmap = resolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it)
-        } ?: error("Unable to read image")
+        require(dpi > 0) { "DPI must be greater than 0" }
 
-        val requestedWidth = parseDimension(widthInput, unit, dpi)
-        val requestedHeight = parseDimension(heightInput, unit, dpi)
-
+        val original = readDimensions(resolver, uri)
         val target = calculateTargetSize(
-            originalWidth = originalBitmap.width,
-            originalHeight = originalBitmap.height,
-            requestedWidth = requestedWidth,
-            requestedHeight = requestedHeight,
-            maintainAspectRatio = maintainAspectRatio
+            original.width,
+            original.height,
+            toPixels(widthInput, unit, dpi),
+            toPixels(heightInput, unit, dpi),
+            maintainAspectRatio
         )
 
-        return Bitmap.createScaledBitmap(
-            originalBitmap,
-            target.width,
-            target.height,
-            true
+        val bitmap = BitmapUtils.decodeSafe(
+            resolver,
+            uri,
+            max(target.width, target.height)
         )
+
+        if (bitmap.width == target.width && bitmap.height == target.height) return bitmap
+
+        return Bitmap.createScaledBitmap(bitmap, target.width, target.height, true).also {
+            bitmap.recycle()
+        }
     }
 
     fun toPixels(valueInput: String, unit: ResizeUnit, dpi: Int): Int? =
         valueInput.toFloatOrNull()
-            ?.takeIf { it > 0f }
+            ?.takeIf { it > 0f && dpi > 0 }
             ?.let { value ->
                 when (unit) {
                     ResizeUnit.Pixels -> value.roundToInt()
@@ -81,9 +69,6 @@ object ImageResizer {
                 }
             }
             ?.let { max(1, it) }
-
-    private fun parseDimension(valueInput: String, unit: ResizeUnit, dpi: Int): Int? =
-        toPixels(valueInput, unit, dpi)
 
     private fun calculateTargetSize(
         originalWidth: Int,
@@ -98,26 +83,33 @@ object ImageResizer {
 
         if (!maintainAspectRatio) {
             return ImageDimensions(
-                width = requestedWidth ?: originalWidth,
-                height = requestedHeight ?: originalHeight
+                requestedWidth ?: originalWidth,
+                requestedHeight ?: originalHeight
             )
         }
 
-        val aspectRatio = originalWidth.toFloat() / originalHeight.toFloat()
-
-        return when {
-            requestedWidth != null -> ImageDimensions(
-                width = requestedWidth,
-                height = max(1, (requestedWidth / aspectRatio).roundToInt())
+        if (requestedWidth == null) {
+            return ImageDimensions(
+                max(1, (requestedHeight!! * originalWidth.toFloat() / originalHeight).roundToInt()),
+                requestedHeight
             )
-
-            requestedHeight != null -> ImageDimensions(
-                width = max(1, (requestedHeight * aspectRatio).roundToInt()),
-                height = requestedHeight
-            )
-
-            else -> ImageDimensions(originalWidth, originalHeight)
         }
+
+        if (requestedHeight == null) {
+            return ImageDimensions(
+                requestedWidth,
+                max(1, (requestedWidth * originalHeight.toFloat() / originalWidth).roundToInt())
+            )
+        }
+
+        val scale = minOf(
+            requestedWidth.toFloat() / originalWidth,
+            requestedHeight.toFloat() / originalHeight
+        )
+
+        return ImageDimensions(
+            max(1, (originalWidth * scale).roundToInt()),
+            max(1, (originalHeight * scale).roundToInt())
+        )
     }
 }
-
