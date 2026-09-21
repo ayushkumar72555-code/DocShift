@@ -54,12 +54,23 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
         progress = 0
         originalSizes = uris.mapNotNull { FileInfoUtils.getFileSize(contentResolver, it) }
         scope.launch(Dispatchers.IO) {
-            val dimensions = uris.firstOrNull()?.let { ImageResizer.readDimensions(contentResolver, it) }
-            withContext(Dispatchers.Main) {
-                firstDimensions = dimensions
-                if (dimensions != null && width.isBlank() && height.isBlank()) {
-                    width = dimensions.width.toString()
-                    height = dimensions.height.toString()
+            try {
+                val dimensions = uris.firstOrNull()?.let { ImageResizer.readDimensions(contentResolver, it) }
+                withContext(Dispatchers.Main) {
+                    firstDimensions = dimensions
+                    if (dimensions != null && width.isBlank() && height.isBlank()) {
+                        width = dimensions.width.toString()
+                        height = dimensions.height.toString()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    firstDimensions = null
+                    Toast.makeText(
+                        context,
+                        e.message ?: "Unable to read the selected image",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
