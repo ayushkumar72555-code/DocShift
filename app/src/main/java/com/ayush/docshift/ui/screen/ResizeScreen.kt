@@ -76,7 +76,21 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
         }
     }
     LaunchedEffect(initialUris) { if (initialUris.isNotEmpty()) loadSelected(initialUris) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { if (it.isNotEmpty()) loadSelected(it) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) {
+            uris.forEach { uri ->
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        uri,
+                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (_: SecurityException) {
+                    // Some providers grant temporary access only.
+                }
+            }
+            loadSelected(uris)
+        }
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
         DocShiftScaffold("Resize image", "Set dimensions and optionally compress", onBack) {
