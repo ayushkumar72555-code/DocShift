@@ -8,9 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.ayush.docshift.ui.theme.BrandDeep
-import com.ayush.docshift.ui.theme.PrimaryAction
-import com.ayush.docshift.ui.theme.SurfaceTint
 
 @Composable
 fun DocShiftScaffold(
@@ -32,7 +29,7 @@ fun DocShiftScaffold(
                     Spacer(Modifier.width(8.dp))
                 }
                 Column(Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.titleLarge, color = BrandDeep, fontWeight = FontWeight.SemiBold)
+                    Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
                     if (subtitle != null) {
                         Spacer(Modifier.height(2.dp))
                         Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -115,12 +112,12 @@ fun EmptyState(title: String, message: String) {
 
 @Composable
 fun PrivacyBadge() {
-    Surface(color = SurfaceTint, shape = MaterialTheme.shapes.small) {
+    Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.small) {
         Text(
             "ON-DEVICE ONLY",
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = BrandDeep,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
             fontWeight = FontWeight.Bold
         )
     }
@@ -129,8 +126,8 @@ fun PrivacyBadge() {
 @Composable
 fun ToolIntro(eyebrow: String, title: String, detail: String) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        Text(eyebrow, style = MaterialTheme.typography.labelLarge, color = PrimaryAction, fontWeight = FontWeight.Bold)
-        Text(title, style = MaterialTheme.typography.headlineMedium, color = BrandDeep, fontWeight = FontWeight.Bold)
+        Text(eyebrow, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        Text(title, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
         Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
