@@ -289,7 +289,7 @@ private fun DocSafeTile(
                             )
                         }
                     }
-                )
+                }
             }
 
             Column(
