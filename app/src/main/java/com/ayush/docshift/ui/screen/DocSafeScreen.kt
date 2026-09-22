@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -131,18 +132,19 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
-                "Private app storage on this device.",
+                "Hardware-backed private storage on this device.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(14.dp))
+            DocSafePrivacyBadge()
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Search private files") }
+                label = { Text("Search locked files & notes") }
             )
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -257,6 +259,38 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
     }
 }
 
+
+@Composable
+private fun DocSafePrivacyBadge() {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                Icons.Default.Lock,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Column {
+                Text(
+                    "Private on this device",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    "Stored inside the app",
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun DocSafeTile(
