@@ -26,6 +26,7 @@ private data class HomeTool(
     val icon: androidx.compose.ui.graphics.vector.ImageVector
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(onSelect: (Screen) -> Unit) {
     val tools = listOf(
@@ -36,17 +37,37 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
         HomeTool("Combine images to PDF", "Arrange scans into one polished document.", Screen.ImageToPdf, Icons.Default.PhotoLibrary),
         HomeTool("Export PDF to images", "Extract high-fidelity page images.", Screen.PdfToImage, Icons.Default.PictureAsPdf)
     )
-    Column(
-        Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
-            .padding(top = 18.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        tools.forEach { tool -> HomeToolCard(tool, onSelect) }
-        PrivacyPromise()
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "DocShift",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(top = 18.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            tools.forEach { tool -> HomeToolCard(tool, onSelect) }
+            PrivacyPromise()
+        }
     }
 }
 
