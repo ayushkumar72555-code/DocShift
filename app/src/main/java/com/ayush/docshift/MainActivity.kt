@@ -17,6 +17,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.ayush.docshift.ui.screen.*
+import androidx.compose.ui.platform.LocalContext
 import com.ayush.docshift.ui.theme.DocShiftTheme
 
 class MainActivity : ComponentActivity() {
@@ -65,8 +66,11 @@ class MainActivity : ComponentActivity() {
                                     onFinish = { viewModel.finishTutorial(this@MainActivity) }
                                 )
 
-                                Screen.Home -> HomeScreen(
-                                    onSelect = viewModel::selectFromHome
+                                Screen.Home -> HomeScreen(onSelect = viewModel::selectFromHome)
+
+                                Screen.DocSafe -> DocSafeScreen(
+                                    context = LocalContext.current,
+                                    onBack = viewModel::goHome
                                 )
 
                                 Screen.Compress -> CompressScreen(
