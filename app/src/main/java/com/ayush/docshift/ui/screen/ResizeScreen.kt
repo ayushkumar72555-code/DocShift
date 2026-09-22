@@ -19,7 +19,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.core.content.FileProvider
-import com.ayush.docshift.image.ImageCompressor
 import com.ayush.docshift.image.ImageResizer
 import com.ayush.docshift.storage.DownloadSaver
 import com.ayush.docshift.util.FileInfoUtils
@@ -40,7 +39,6 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
     var firstDimensions by remember { mutableStateOf<ImageResizer.ImageDimensions?>(null) }
     var width by remember { mutableStateOf("") }
     var height by remember { mutableStateOf("") }
-    var targetSize by remember { mutableStateOf("100") }
     var dpi by remember { mutableStateOf("300") }
     var unit by remember { mutableStateOf(ImageResizer.ResizeUnit.Pixels) }
     var unitExpanded by remember { mutableStateOf(false) }
@@ -174,19 +172,10 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
                 }
                 AssistChip(onClick = { unit = ImageResizer.ResizeUnit.Centimeters; width = "2.5"; height = "3" }, label = { Text("Stamp · 2.5 × 3 cm") })
             }
-            SectionCard("Output size") {
-                OutlinedTextField(value = targetSize, onValueChange = { targetSize = it.filter(Char::isDigit) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, label = { Text("Compress after resize (KB)") })
-                Text("Aspect Fit is applied when ratio lock is enabled, preventing distortion.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
             if (isProcessing) SectionCard("Progress") { ProgressBlock(progress, imageUris.size, "Processing " + progress + " of " + imageUris.size) }
-            PrimaryAction(if (isProcessing) "Resizing…" else "Resize and compress", imageUris.isNotEmpty() && !isProcessing) {
+            PrimaryAction(if (isProcessing) "Resizing…" else "Resize image", imageUris.isNotEmpty() && !isProcessing) {
                 keyboard?.hide()
-                val targetKb = targetSize.toIntOrNull()
                 val dpiValue = dpi.toIntOrNull() ?: 300
-                if (targetKb == null || targetKb <= 0) {
-                    Toast.makeText(context, "Enter a valid target size", Toast.LENGTH_SHORT).show()
-                    return@PrimaryAction
-                }
                 if (width.isBlank() && height.isBlank()) {
                     Toast.makeText(context, "Enter width or height", Toast.LENGTH_SHORT).show()
                     return@PrimaryAction
@@ -198,9 +187,26 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
                     try {
                         val output = mutableListOf<File>()
                         imageUris.forEachIndexed { index, uri ->
-                            val bitmap = ImageResizer.resize(contentResolver, uri, width, height, unit, dpiValue, maintainAspectRatio)
+                            val bitmap = ImageResizer.resize(
+                                contentResolver,
+                                uri,
+                                width,
+                                height,
+                                unit,
+                                dpiValue,
+                                maintainAspectRatio
+                            )
                             try {
-                                output += ImageCompressor.compressBitmapToTarget(bitmap, targetKb, cacheDir, "DocShift_resize")
+                                val outputFile = File(
+                                    cacheDir,
+                                    "DocShift_resize_${System.currentTimeMillis()}_${index}.jpg"
+                                )
+                                outputFile.outputStream().use { stream ->
+                                    if (!bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 95, stream)) {
+                                        throw IllegalStateException("Unable to save resized image")
+                                    }
+                                }
+                                output += outputFile
                             } finally {
                                 if (!bitmap.isRecycled) bitmap.recycle()
                             }
