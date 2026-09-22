@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,7 +38,13 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
         HomeTool("Export PDF to images", "Extract high-fidelity page images.", "EXPORT", Screen.PdfToImage)
     )
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(top = 18.dp, bottom = 28.dp),
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp)
+            .padding(top = 18.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         HomeHero()
@@ -62,29 +69,105 @@ private fun HomeHero() {
 
 @Composable
 private fun HomeToolCard(tool: HomeTool, onSelect: (Screen) -> Unit) {
+    val dark = isSystemInDarkTheme()
+
+    val cardColor = if (dark) Color(0xFF1C1E24) else Color.White
+    val titleColor = if (dark) Color(0xFFF1F2F7) else BrandDeep
+    val subtitleColor = if (dark) Color(0xFFB9C1FF) else MutedSlate
+    val iconColor = if (dark) Color(0xFFB7C5FF) else PrimaryAction
+    val badgeColor = if (dark) Color(0xFF303A68) else SoftAccent
+
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onSelect(tool.screen) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onSelect(tool.screen) },
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (dark) 0.dp else 1.dp
+        )
     ) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(tool.badge.take(1), modifier = Modifier.size(44.dp).background(SoftAccent, RoundedCornerShape(14.dp)).padding(top = 11.dp), color = PrimaryAction, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(tool.title, style = MaterialTheme.typography.titleMedium, color = BrandDeep, fontWeight = FontWeight.SemiBold)
-                Text(tool.subtitle, style = MaterialTheme.typography.bodySmall, color = MutedSlate)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .background(badgeColor, RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = tool.badge.take(1),
+                    color = iconColor,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
             }
-            Icon(Icons.Default.ArrowForward, null, tint = PrimaryAction)
+
+            Spacer(Modifier.width(14.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = tool.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = titleColor,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+                Text(
+                    text = tool.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = subtitleColor,
+                    maxLines = 2
+                )
+            }
+
+            Spacer(Modifier.width(10.dp))
+
+            Icon(
+                Icons.Default.ArrowForward,
+                contentDescription = null,
+                tint = iconColor
+            )
         }
     }
 }
 
 @Composable
 private fun PrivacyPromise() {
-    Row(Modifier.fillMaxWidth().background(SurfaceTint, RoundedCornerShape(16.dp)).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Default.Lock, null, tint = BrandDeep, modifier = Modifier.size(20.dp))
+    val dark = isSystemInDarkTheme()
+
+    val containerColor = if (dark) Color(0xFF252C4A) else SurfaceTint
+    val contentColor = if (dark) Color(0xFFDCE5FF) else BrandDeep
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(containerColor, RoundedCornerShape(16.dp))
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Default.Lock,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(20.dp)
+        )
+
         Spacer(Modifier.width(10.dp))
-        Text("Private by design - every file stays on your device.", style = MaterialTheme.typography.bodySmall, color = BrandDeep, fontWeight = FontWeight.Medium)
+
+        Text(
+            text = "Private by design - every file stays on your device.",
+            style = MaterialTheme.typography.bodySmall,
+            color = contentColor,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
