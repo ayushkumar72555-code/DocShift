@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Description
@@ -105,16 +107,7 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
                 navigationIcon = {
                     TextButton(onClick = onBack) { Text("Back") }
                 },
-                actions = {
-                    FilledTonalButton(
-                        onClick = ::launchPicker,
-                        contentPadding = PaddingValues(horizontal = 14.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(Modifier.width(5.dp))
-                        Text("Add")
-                    }
-                }
+                actions = {}
             )
         },
         floatingActionButton = {
@@ -132,8 +125,8 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
-                "Hardware-backed private storage on this device.",
-                style = MaterialTheme.typography.bodyLarge,
+                "Private app storage on this device.",
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(14.dp))
@@ -144,12 +137,21 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Search locked files & notes") }
+                label = { Text("Search private files") }
             )
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 listOf("All", "IDs", "Medical", "Education").forEach { category ->
-                    FilterChip(selected = selectedCategory == category, onClick = { selectedCategory = category }, label = { Text(category) }, modifier = Modifier.weight(1f))
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = { selectedCategory = category },
+                        label = { Text(category) }
+                    )
                 }
             }
             Spacer(Modifier.height(14.dp))
