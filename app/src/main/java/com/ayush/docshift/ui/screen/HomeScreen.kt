@@ -40,15 +40,13 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
             .padding(top = 18.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         HomeHero()
-        Text("YOUR ON-DEVICE TOOLKIT", style = MaterialTheme.typography.labelLarge, color = BrandDeep)
         tools.forEach { tool -> HomeToolCard(tool, onSelect) }
         PrivacyPromise()
     }
