@@ -8,6 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.ayush.docshift.ui.theme.BrandDeep
+import com.ayush.docshift.ui.theme.PrimaryAction
+import com.ayush.docshift.ui.theme.SurfaceTint
 
 @Composable
 fun DocShiftScaffold(
@@ -17,7 +20,7 @@ fun DocShiftScaffold(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-        Surface(tonalElevation = 1.dp, shadowElevation = 1.dp) {
+        Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp, shadowElevation = 0.dp) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -29,7 +32,7 @@ fun DocShiftScaffold(
                     Spacer(Modifier.width(8.dp))
                 }
                 Column(Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    Text(title, style = MaterialTheme.typography.titleLarge, color = BrandDeep, fontWeight = FontWeight.SemiBold)
                     if (subtitle != null) {
                         Spacer(Modifier.height(2.dp))
                         Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -49,8 +52,9 @@ fun DocShiftScaffold(
 fun SectionCard(title: String? = null, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        shape = MaterialTheme.shapes.large
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (title != null) Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -106,5 +110,27 @@ fun EmptyState(title: String, message: String) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         }
+    }
+}
+
+@Composable
+fun PrivacyBadge() {
+    Surface(color = SurfaceTint, shape = MaterialTheme.shapes.small) {
+        Text(
+            "ON-DEVICE ONLY",
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = BrandDeep,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun ToolIntro(eyebrow: String, title: String, detail: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Text(eyebrow, style = MaterialTheme.typography.labelLarge, color = PrimaryAction, fontWeight = FontWeight.Bold)
+        Text(title, style = MaterialTheme.typography.headlineMedium, color = BrandDeep, fontWeight = FontWeight.Bold)
+        Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

@@ -44,6 +44,8 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
     var documents by remember { mutableStateOf<List<SafeDocument>>(emptyList()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("All") }
     val scope = rememberCoroutineScope()
 
     fun refresh() {
@@ -84,6 +86,17 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
         picker.launch(arrayOf("*/*"))
     }
 
+    val filteredDocuments = documents.filter { document ->
+        val matchesSearch = document.file.name.contains(searchQuery, ignoreCase = true)
+        val matchesCategory = when (selectedCategory) {
+            "IDs" -> document.file.name.contains("id", true) || document.file.name.contains("passport", true)
+            "Medical" -> document.file.name.contains("medical", true) || document.file.name.contains("health", true)
+            "Education" -> document.file.name.contains("degree", true) || document.file.name.contains("certificate", true)
+            else -> true
+        }
+        matchesSearch && matchesCategory
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -118,10 +131,26 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
-                "Your important files, stored on this device.",
+                "Hardware-backed private storage on this device.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(Modifier.height(14.dp))
+            PrivacyBadge()
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Search locked files & notes") }
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("All", "IDs", "Medical", "Education").forEach { category ->
+                    FilterChip(selected = selectedCategory == category, onClick = { selectedCategory = category }, label = { Text(category) }, modifier = Modifier.weight(1f))
+                }
+            }
             Spacer(Modifier.height(14.dp))
 
             when {
@@ -161,7 +190,7 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            documents.size.toString() + if (documents.size == 1) " file" else " files",
+                            filteredDocuments.size.toString() + if (filteredDocuments.size == 1) " file" else " files",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -182,7 +211,7 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(documents, key = { it.file.absolutePath }) { document ->
+                        items(filteredDocuments, key = { it.file.absolutePath }) { document ->
                             DocSafeTile(
                                 document = document,
                                 onOpen = {

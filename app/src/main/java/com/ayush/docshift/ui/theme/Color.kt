@@ -2,13 +2,21 @@ package com.ayush.docshift.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val PrimaryLight = Color(0xFF2457D6)
+val PrimaryAction = Color(0xFF3448FD)
+val SoftAccent = Color(0xFF929FFA)
+val BrandDeep = Color(0xFF1B0F6B)
+val VibrantBlue = Color(0xFF2756FD)
+val IndigoRich = Color(0xFF371CA3)
+val MutedSlate = Color(0xFF5D68D3)
+val SurfaceTint = Color(0xFFE1E7FF)
+
+val PrimaryLight = PrimaryAction
 val OnPrimaryLight = Color(0xFFFFFFFF)
-val PrimaryContainerLight = Color(0xFFDCE5FF)
-val OnPrimaryContainerLight = Color(0xFF10285F)
+val PrimaryContainerLight = SurfaceTint
+val OnPrimaryContainerLight = BrandDeep
 val BackgroundLight = Color(0xFFF8F9FC)
 val SurfaceLight = Color(0xFFF8F9FC)
-val SurfaceVariantLight = Color(0xFFE7EAF2)
+val SurfaceVariantLight = SurfaceTint
 
 val PrimaryDark = Color(0xFFB5C6FF)
 val OnPrimaryDark = Color(0xFF0A1B4D)

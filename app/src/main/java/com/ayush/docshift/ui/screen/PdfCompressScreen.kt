@@ -56,7 +56,9 @@ fun PdfCompressScreen(cacheDir: File, initialPdf: Uri? = null, onBack: () -> Uni
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { it?.let(::selectPdf) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-        DocShiftScaffold("Reduce PDF size", "Precise target size with selectable quality", onBack) {
+        DocShiftScaffold("Shrink PDF size", "PDF stream optimizer", onBack) {
+            ToolIntro("DOCUMENT OPTIMIZER", "Reduce PDF size", "Select a compression level for a smaller, share-ready PDF processed entirely on-device.")
+            PrivacyBadge()
             SectionCard("Document") {
                 if (selectedPdf == null) Text("Choose a PDF to reduce its file size.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 else {
@@ -65,7 +67,21 @@ fun PdfCompressScreen(cacheDir: File, initialPdf: Uri? = null, onBack: () -> Uni
                 }
                 SecondaryAction("Select PDF", !isProcessing) { picker.launch("application/pdf") }
             }
-            SectionCard("Compression settings") {
+            SectionCard("Compression level") {
+                listOf(
+                    PdfCompressor.CompressionMode.HighQuality to "Gentle · print quality",
+                    PdfCompressor.CompressionMode.Balanced to "Balanced · recommended",
+                    PdfCompressor.CompressionMode.Maximum to "Extreme · web form limits"
+                ).forEach { (mode, description) ->
+                    FilterChip(
+                        selected = compressionMode == mode,
+                        onClick = { compressionMode = mode },
+                        label = { Column { Text(mode.label, fontWeight = FontWeight.SemiBold); Text(description, style = MaterialTheme.typography.bodySmall) } },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+            SectionCard("Target settings") {
                 ExposedDropdownMenuBox(modeExpanded, { modeExpanded = !modeExpanded }) {
                     OutlinedTextField(
                         value = compressionMode.label,

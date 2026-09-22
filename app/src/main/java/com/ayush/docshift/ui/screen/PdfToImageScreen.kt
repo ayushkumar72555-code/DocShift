@@ -38,6 +38,16 @@ fun PdfToImageScreen(
     var isProcessing by remember { mutableStateOf(false) }
     var progress by remember { mutableStateOf(0) }
     var totalPages by remember { mutableStateOf(0) }
+    var exportFormat by remember { mutableStateOf(PdfToImageConverter.OutputFormat.PNG) }
+    var dpi by remember { mutableStateOf(300) }
+    var rangeMode by remember { mutableStateOf("All pages") }
+    var customRange by remember { mutableStateOf("") }
+
+    fun selectedRange(): IntRange? {
+        if (rangeMode != "Custom range") return null
+        val parts = customRange.split("-").mapNotNull { it.trim().toIntOrNull() }
+        return if (parts.size == 2 && parts[0] > 0 && parts[1] >= parts[0]) parts[0]..parts[1] else null
+    }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
         it?.let { uri ->
@@ -54,7 +64,9 @@ fun PdfToImageScreen(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 16.dp)
     ) {
-        DocShiftScaffold("PDF to image", "Export each page as a high quality image", onBack) {
+        DocShiftScaffold("Extract PDF pages", "High-fidelity page extractor", onBack) {
+            ToolIntro("MULTI-PAGE RASTERIZER", "Export PDF to images", "Choose your page range, image format and resolution before extracting.")
+            PrivacyBadge()
             SectionCard("Document") {
                 if (selectedPdf == null) {
                     Text("Choose a PDF to convert.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -63,6 +75,31 @@ fun PdfToImageScreen(
                 }
                 SecondaryAction("Select PDF", !isProcessing) {
                     picker.launch("application/pdf")
+                }
+            }
+
+            SectionCard("Export range") {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("All pages", "Custom range").forEach { option ->
+                        FilterChip(selected = rangeMode == option, onClick = { rangeMode = option }, label = { Text(option) }, modifier = Modifier.weight(1f))
+                    }
+                }
+                if (rangeMode == "Custom range") {
+                    OutlinedTextField(value = customRange, onValueChange = { customRange = it.filter { char -> char.isDigit() || char == '-' } }, modifier = Modifier.fillMaxWidth(), label = { Text("Pages, e.g. 1-4") }, singleLine = true)
+                }
+            }
+            SectionCard("Image settings") {
+                Text("IMAGE FORMAT", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PdfToImageConverter.OutputFormat.entries.forEach { format ->
+                        FilterChip(selected = exportFormat == format, onClick = { exportFormat = format }, label = { Text(format.name) }, modifier = Modifier.weight(1f))
+                    }
+                }
+                Text("RESOLUTION", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(72, 150, 300).forEach { option ->
+                        FilterChip(selected = dpi == option, onClick = { dpi = option }, label = { Text("$option DPI") }, modifier = Modifier.weight(1f))
+                    }
                 }
             }
 
@@ -84,7 +121,10 @@ fun PdfToImageScreen(
                         val files = PdfToImageConverter.convert(
                             context,
                             uri,
-                            File(cacheDir, "pdf_images")
+                            File(cacheDir, "pdf_images"),
+                            format = exportFormat,
+                            dpi = dpi,
+                            pageRange = selectedRange()
                         ) { current, total ->
                             scope.launch(Dispatchers.Main.immediate) {
                                 progress = current

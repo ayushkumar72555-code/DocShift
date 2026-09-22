@@ -34,6 +34,8 @@ fun ImageToPdfScreen(contentResolver: ContentResolver, cacheDir: File, initialUr
     var showRenameDialog by remember { mutableStateOf(false) }
     var pendingFile by remember { mutableStateOf<File?>(null) }
     var fileNameInput by remember { mutableStateOf("") }
+    var pageFormat by remember { mutableStateOf(ImageToPdfConverter.PageFormat.A4Portrait) }
+    var marginPx by remember { mutableStateOf(19) }
 
     fun convert(uris: List<Uri>) {
         if (uris.isEmpty()) return
@@ -46,7 +48,9 @@ fun ImageToPdfScreen(contentResolver: ContentResolver, cacheDir: File, initialUr
                     resolver = contentResolver,
                     imageUris = uris,
                     outputDir = cacheDir,
-                    fileName = "DocShift_" + System.currentTimeMillis()
+                    fileName = "DocShift_" + System.currentTimeMillis(),
+                    pageFormat = pageFormat,
+                    marginPx = marginPx
                 ) { current, _ ->
                     scope.launch(Dispatchers.Main.immediate) { progress = current }
                 }
@@ -69,11 +73,28 @@ fun ImageToPdfScreen(contentResolver: ContentResolver, cacheDir: File, initialUr
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-        DocShiftScaffold("Image to PDF", "Combine multiple images into one PDF", onBack) {
+        DocShiftScaffold("Combine to PDF", "Multi-scan arranger", onBack) {
+            ToolIntro("MULTI-SCAN MERGE", "Combine images to PDF", "Keep images in selection order, then fit each scan to a consistent document page.")
+            PrivacyBadge()
             SectionCard("Images") {
                 if (imageUris.isEmpty()) Text("Select one or more images to create a PDF.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 else Text(imageUris.size.toString() + " image" + if (imageUris.size == 1) " selected" else "s selected", fontWeight = FontWeight.Medium)
                 SecondaryAction("Select images", !isProcessing) { picker.launch("image/*") }
+            }
+            SectionCard("Page layout") {
+                Text("PAGE FORMAT", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(ImageToPdfConverter.PageFormat.A4Portrait, ImageToPdfConverter.PageFormat.Letter, ImageToPdfConverter.PageFormat.Original).forEach { format ->
+                        val label = when (format) { ImageToPdfConverter.PageFormat.A4Portrait -> "A4"; ImageToPdfConverter.PageFormat.Letter -> "Letter"; ImageToPdfConverter.PageFormat.Original -> "Original" }
+                        FilterChip(selected = pageFormat == format, onClick = { pageFormat = format }, label = { Text(label) }, modifier = Modifier.weight(1f))
+                    }
+                }
+                Text("MARGINS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(0 to "None", 19 to "Narrow", 38 to "Standard").forEach { (pixels, label) ->
+                        FilterChip(selected = marginPx == pixels, onClick = { marginPx = pixels }, label = { Text(label) }, modifier = Modifier.weight(1f))
+                    }
+                }
             }
             if (isProcessing) SectionCard("Progress") { ProgressBlock(progress, imageUris.size, "Processing " + progress + " of " + imageUris.size) }
             if (resultFile == null && !isProcessing) PrimaryAction("Create PDF", imageUris.isNotEmpty()) { convert(imageUris) }

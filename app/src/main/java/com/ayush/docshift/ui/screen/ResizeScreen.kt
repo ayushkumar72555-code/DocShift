@@ -120,7 +120,9 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-        DocShiftScaffold("Resize image", "Set dimensions and optionally compress", onBack) {
+        DocShiftScaffold("Resize dimensions", "Multi-unit precision engine", onBack) {
+            ToolIntro("DIMENSIONS, ASPECT & DPI", "Resize image", "Set exact dimensions with an aspect-ratio lock and practical document presets.")
+            PrivacyBadge()
             SectionCard("Images") {
                 if (imageUris.isEmpty()) Text("Choose images to resize.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 else {
@@ -165,9 +167,16 @@ fun ResizeScreen(contentResolver: ContentResolver, cacheDir: File, initialUris: 
                     Text("Maintain aspect ratio")
                     Switch(checked = maintainAspectRatio, onCheckedChange = { maintainAspectRatio = it })
                 }
+                Text("GOVERNMENT / PORTAL PRESETS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    AssistChip(onClick = { unit = ImageResizer.ResizeUnit.Centimeters; width = "3.5"; height = "4.5" }, label = { Text("Passport") }, modifier = Modifier.weight(1f))
+                    AssistChip(onClick = { unit = ImageResizer.ResizeUnit.Pixels; width = "200"; height = "60" }, label = { Text("Signature") }, modifier = Modifier.weight(1f))
+                }
+                AssistChip(onClick = { unit = ImageResizer.ResizeUnit.Centimeters; width = "2.5"; height = "3" }, label = { Text("Stamp · 2.5 × 3 cm") })
             }
             SectionCard("Output size") {
                 OutlinedTextField(value = targetSize, onValueChange = { targetSize = it.filter(Char::isDigit) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, label = { Text("Compress after resize (KB)") })
+                Text("Aspect Fit is applied when ratio lock is enabled, preventing distortion.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (isProcessing) SectionCard("Progress") { ProgressBlock(progress, imageUris.size, "Processing " + progress + " of " + imageUris.size) }
             PrimaryAction(if (isProcessing) "Resizing…" else "Resize and compress", imageUris.isNotEmpty() && !isProcessing) {

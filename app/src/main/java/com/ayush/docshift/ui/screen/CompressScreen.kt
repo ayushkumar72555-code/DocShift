@@ -68,7 +68,9 @@ fun CompressScreen(contentResolver: ContentResolver, cacheDir: File, initialUris
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-        DocShiftScaffold("Reduce image size", "Target a specific file size", onBack) {
+        DocShiftScaffold("Compress image", "Smart target compression", onBack) {
+            ToolIntro("TARGET COMPRESSION", "Reduce image size", "Choose a file-size limit and let DocShift optimize the image locally.")
+            PrivacyBadge()
             SectionCard("Files") {
                 if (imageUris.isEmpty()) {
                     Text("Choose one or more images to compress.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -79,6 +81,17 @@ fun CompressScreen(contentResolver: ContentResolver, cacheDir: File, initialUris
                 SecondaryAction("Select images", !isProcessing) { picker.launch(arrayOf("image/*")) }
             }
             SectionCard("Target size") {
+                Text("QUICK PRESETS", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("50", "100", "200", "500").forEach { preset ->
+                        FilterChip(
+                            selected = targetSize == preset,
+                            onClick = { targetSize = preset },
+                            label = { Text("< $preset KB") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
                 ExposedDropdownMenuBox(expanded, { expanded = !expanded }) {
                     OutlinedTextField(
                         value = targetSize,
@@ -92,6 +105,14 @@ fun CompressScreen(contentResolver: ContentResolver, cacheDir: File, initialUris
                     ExposedDropdownMenu(expanded, { expanded = false }) {
                         presets.forEach { preset -> DropdownMenuItem(text = { Text(preset + " KB") }, onClick = { targetSize = preset; expanded = false }) }
                     }
+                }
+                Text("Output format · JPEG (universal)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (imageUris.isNotEmpty() && originalSizes.isNotEmpty()) {
+                val estimate = (targetSize.toLongOrNull() ?: 0L) * 1024L * imageUris.size
+                SectionCard("Estimated result") {
+                    Text("Estimated output · " + if (estimate > 0) FormatUtils.formatSize(estimate) else "Select a target")
+                    Text("Target-based optimization avoids quality-slider guesswork.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             if (isProcessing) SectionCard("Progress") { ProgressBlock(progress, imageUris.size, "Processing " + progress + " of " + imageUris.size) }
