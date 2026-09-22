@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun HomeScreen(onSelect: (Screen) -> Unit) {
     val tiles = listOf(
+        Triple("DocSafe", "Keep important files ready on your device.", Screen.DocSafe),
         Triple("Reduce Image Size", "Compress images to a target file size.", Screen.Compress),
         Triple("Resize Image", "Set dimensions in pixels, cm or inches.", Screen.Resize),
         Triple("Reduce PDF Size", "Shrink PDFs to a precise target size.", Screen.PdfCompress),
