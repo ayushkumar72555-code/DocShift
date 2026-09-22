@@ -32,12 +32,12 @@ private data class HomeTool(
 @Composable
 fun HomeScreen(onSelect: (Screen) -> Unit) {
     val tools = listOf(
-        HomeTool("DocSafe Vault", "Keep private files on this device.", Screen.DocSafe, Lock),
-        HomeTool("Reduce image size", "Meet portal limits without guesswork.", Screen.Compress, Image),
-        HomeTool("Resize image", "Precise dimensions, DPI and aspect control.", Screen.Resize, Straighten),
-        HomeTool("Reduce PDF size", "Optimize documents for sharing and forms.", Screen.PdfCompress, PictureAsPdf),
-        HomeTool("Combine images to PDF", "Arrange scans into one polished document.", Screen.ImageToPdf, PhotoLibrary),
-        HomeTool("Export PDF to images", "Extract high-fidelity page images.", Screen.PdfToImage, PictureAsPdf)
+        HomeTool("DocSafe Vault", "Keep private files on this device.", Screen.DocSafe, Icons.Default.Lock),
+        HomeTool("Reduce image size", "Meet portal limits without guesswork.", Screen.Compress, Icons.Default.Image),
+        HomeTool("Resize image", "Precise dimensions, DPI and aspect control.", Screen.Resize, Icons.Default.Straighten),
+        HomeTool("Reduce PDF size", "Optimize documents for sharing and forms.", Screen.PdfCompress, Icons.Default.PictureAsPdf),
+        HomeTool("Combine images to PDF", "Arrange scans into one polished document.", Screen.ImageToPdf, Icons.Default.PhotoLibrary),
+        HomeTool("Export PDF to images", "Extract high-fidelity page images.", Screen.PdfToImage, Icons.Default.PictureAsPdf)
     )
     Column(
         Modifier
