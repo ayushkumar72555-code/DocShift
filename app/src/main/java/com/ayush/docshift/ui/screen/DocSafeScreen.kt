@@ -19,6 +19,7 @@ import com.ayush.docshift.storage.DocSafeStore
 import com.ayush.docshift.storage.SafeDocument
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocSafeScreen(context: Context, onBack: () -> Unit) {
     var documents by remember { mutableStateOf(DocSafeStore.list(context)) }
