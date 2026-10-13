@@ -17,7 +17,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 private data class HomeTool(
@@ -124,7 +126,7 @@ private fun HomeToolCard(
     Card(
         modifier = modifier
             .heightIn(min = if (featured) 174.dp else 162.dp)
-            .clickable { onSelect(tool.screen) },
+            .clickable(role = Role.Button) { onSelect(tool.screen) },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (featured) MaterialTheme.colorScheme.primaryContainer
@@ -166,7 +168,7 @@ private fun HomeToolCard(
                 }
                 Icon(
                     imageVector = Icons.Default.ArrowForward,
-                    contentDescription = "Open " + tool.title,
+                    contentDescription = null,
                     tint = if (featured) MaterialTheme.colorScheme.onPrimaryContainer
                     else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
@@ -179,7 +181,8 @@ private fun HomeToolCard(
                     color = if (featured) MaterialTheme.colorScheme.onPrimaryContainer
                     else MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 2
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = tool.subtitle,
