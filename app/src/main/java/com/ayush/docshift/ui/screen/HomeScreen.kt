@@ -16,19 +16,23 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.*
+import android.app.Activity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 
 private val Paper = Color(0xFFF0E6D5)
 private val PaperLight = Color(0xFFFFF9ED)
@@ -67,6 +71,17 @@ private data class HomeTool(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(onSelect: (Screen) -> Unit) {
+    val view = LocalView.current
+    SideEffect {
+        val window = (view.context as? Activity)?.window
+        if (window != null) {
+            window.statusBarColor = android.graphics.Color.TRANSPARENT
+            window.navigationBarColor = android.graphics.Color.rgb(240, 230, 213)
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = true
+            controller.isAppearanceLightNavigationBars = true
+        }
+    }
     val tools = listOf(
         HomeTool("DocSafe Vault", "Keep private files on this device.", Screen.DocSafe, Icons.Default.Lock),
         HomeTool("Reduce image size", "Smaller files for forms and sharing.", Screen.Compress, Icons.Default.Image),
