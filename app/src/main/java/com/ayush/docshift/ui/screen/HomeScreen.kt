@@ -75,7 +75,7 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
     SideEffect {
         val window = (view.context as? Activity)?.window
         if (window != null) {
-            window.statusBarColor = android.graphics.Color.TRANSPARENT
+            window.statusBarColor = android.graphics.Color.rgb(240, 230, 213)
             window.navigationBarColor = android.graphics.Color.rgb(240, 230, 213)
             val controller = WindowCompat.getInsetsController(window, view)
             controller.isAppearanceLightStatusBars = true
@@ -92,44 +92,8 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
     )
     Scaffold(
         containerColor = Paper,
-        topBar = {
-            // A custom paper header avoids Material top-bar defaults and keeps the brand aligned
-            // with the same parchment surface as the rest of the screen.
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Paper)
-                    .statusBarsPadding()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(62.dp)
-                        .padding(horizontal = 22.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        HeaderRule(Modifier.weight(1f))
-                        Text(
-                            text = "DocShift",
-                            color = Ink,
-                            fontFamily = FontFamily.Serif,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 27.sp,
-                            letterSpacing = 0.2.sp
-                        )
-                        HeaderRule(Modifier.weight(1f))
-                    }
-                }
-                Canvas(Modifier.fillMaxWidth().height(1.dp)) {
-                    drawLine(PaperLine.copy(alpha = 0.65f), Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx())
-                }
-            }
-        }
+        // The brand header is rendered in the content column below, not in a Material app bar.
+
     ) { innerPadding ->
         Column(
             Modifier
@@ -142,6 +106,31 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
                 .padding(top = 16.dp, bottom = 22.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
+            // Custom header lives in the scroll content so no platform/Material app bar can override it.
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(62.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    HeaderRule(Modifier.weight(1f))
+                    Text(
+                        text = "DocShift",
+                        color = Ink,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 27.sp,
+                        letterSpacing = 0.2.sp
+                    )
+                    HeaderRule(Modifier.weight(1f))
+                }
+                Canvas(Modifier.fillMaxWidth().height(1.dp)) {
+                    drawLine(PaperLine.copy(alpha = 0.65f), Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx())
+                }
+            }
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text("THE PAPER TOOLKIT", color = InkMuted, fontSize = 10.sp, letterSpacing = 2.4.sp, fontWeight = FontWeight.Bold)
                 Text(
