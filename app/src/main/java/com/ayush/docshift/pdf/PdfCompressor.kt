@@ -56,7 +56,7 @@ object PdfCompressor {
         val sourceFile = File(sessionDir, "source.pdf")
         val outputFile = File(outputDir, "DocShift_compressed_${UUID.randomUUID()}.pdf")
         val job = coroutineContext[Job]
-        val checkCancellation = { job?.ensureActive() }
+        val checkCancellation: () -> Unit = { job?.ensureActive() }
         var completed = false
 
         try {
