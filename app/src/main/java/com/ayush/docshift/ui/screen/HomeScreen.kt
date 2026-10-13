@@ -78,8 +78,21 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
     Scaffold(
         containerColor = Paper,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
+            // A custom paper header avoids Material top-bar defaults and keeps the brand aligned
+            // with the same parchment surface as the rest of the screen.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Paper)
+                    .statusBarsPadding()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(62.dp)
+                        .padding(horizontal = 22.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -96,12 +109,11 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
                         )
                         HeaderRule(Modifier.weight(1f))
                     }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Paper,
-                    scrolledContainerColor = Paper
-                )
-            )
+                }
+                Canvas(Modifier.fillMaxWidth().height(1.dp)) {
+                    drawLine(PaperLine.copy(alpha = 0.65f), Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx())
+                }
+            }
         }
     ) { innerPadding ->
         Column(
