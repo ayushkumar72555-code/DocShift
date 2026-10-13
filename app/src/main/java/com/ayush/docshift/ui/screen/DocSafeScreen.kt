@@ -72,12 +72,28 @@ fun DocSafeScreen(context: Context, onBack: () -> Unit) {
         scope.launch {
             isLoading = true
             try {
-                val imported = withContext(Dispatchers.IO) {
-                    uris.map { DocSafeStore.import(context, it) }
+                val (imported, failedCount) = withContext(Dispatchers.IO) {
+                    val successful = mutableListOf<SafeDocument>()
+                    var failed = 0
+                    uris.forEach { uri ->
+                        try {
+                            successful += DocSafeStore.import(context, uri)
+                        } catch (_: Exception) {
+                            failed++
+                        }
+                    }
+                    successful to failed
                 }
                 documents = (imported + documents)
                     .distinctBy { it.file.absolutePath }
                     .sortedByDescending { it.file.lastModified() }
+                if (failedCount > 0) {
+                    errorMessage = if (imported.isEmpty()) {
+                        "Unable to import the selected files. Check that they are accessible and try again."
+                    } else {
+                        "Added ${imported.size} file(s). ${failedCount} file(s) could not be imported."
+                    }
+                }
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Unable to add the selected files"
             } finally {

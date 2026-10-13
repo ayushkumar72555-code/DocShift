@@ -31,12 +31,27 @@ object DocSafeStore {
         val originalName = queryDisplayName(resolver, uri)
             ?: ("Document_" + System.currentTimeMillis())
         val destination = uniqueFile(directory(context), sanitizeName(originalName))
+        val temporary = File(
+            destination.parentFile,
+            ".${destination.name}.${System.currentTimeMillis()}.tmp"
+        )
 
-        resolver.openInputStream(uri)?.use { input ->
-            destination.outputStream().use { output -> input.copyTo(output) }
-        } ?: throw IllegalStateException("Unable to read the selected file")
-
-        return SafeDocument(destination, mimeTypeFor(destination, resolver.getType(uri)))
+        try {
+            val input = resolver.openInputStream(uri)
+                ?: throw IllegalStateException("Unable to read the selected file")
+            input.use { stream ->
+                temporary.outputStream().use { output -> stream.copyTo(output) }
+            }
+            if (!temporary.renameTo(destination)) {
+                throw IllegalStateException("Unable to finalize imported file")
+            }
+            return SafeDocument(destination, mimeTypeFor(destination, resolver.getType(uri)))
+        } catch (error: Exception) {
+            temporary.delete()
+            throw error
+        } finally {
+            temporary.delete()
+        }
     }
 
     fun delete(document: SafeDocument): Boolean = document.file.delete()
@@ -49,10 +64,13 @@ object DocSafeStore {
         return uri.lastPathSegment
     }
 
-    private fun sanitizeName(name: String): String =
-        name.replace(Regex("[\\\\/:*?\\\"<>|]"), "_")
+    private fun sanitizeName(name: String): String {
+        val sanitized = name.replace(Regex("[\\\\/:*?\\\"<>|]"), "_")
             .trim()
-            .ifBlank { "Document_" + System.currentTimeMillis() }
+            .take(180)
+        return sanitized.takeIf { it.isNotBlank() && it != "." && it != ".." }
+            ?: "Document_" + System.currentTimeMillis()
+    }
 
     private fun uniqueFile(directory: File, name: String): File {
         val base = name.substringBeforeLast('.', name)
