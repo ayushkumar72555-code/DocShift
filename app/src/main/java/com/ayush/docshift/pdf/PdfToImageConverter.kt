@@ -8,6 +8,7 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
+import com.ayush.docshift.util.PageRangeParser
 import kotlin.math.min
 
 object PdfToImageConverter {
@@ -36,11 +37,7 @@ object PdfToImageConverter {
             val pageCount = renderer.pageCount
             val requestedPages = pageRange ?: (1..pageCount)
             if (pageRange != null) {
-                require(
-                    pageRange.first >= 1 &&
-                        pageRange.last >= pageRange.first &&
-                        pageRange.last <= pageCount
-                ) {
+                require(PageRangeParser.isWithinPageCount(pageRange, pageCount)) {
                     "Page range must be between 1 and $pageCount"
                 }
             }

@@ -19,6 +19,7 @@ import androidx.core.content.FileProvider
 import com.ayush.docshift.R
 import com.ayush.docshift.pdf.PdfToImageConverter
 import com.ayush.docshift.storage.DownloadSaver
+import com.ayush.docshift.util.PageRangeParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,14 +44,8 @@ fun PdfToImageScreen(
     var rangeMode by remember { mutableStateOf("All pages") }
     var customRange by remember { mutableStateOf("") }
 
-    fun selectedRange(): IntRange? {
-        if (rangeMode != "Custom range") return null
-        val match = Regex("""^\s*(\d+)\s*-\s*(\d+)\s*$""").matchEntire(customRange)
-            ?: return null
-        val first = match.groupValues[1].toIntOrNull() ?: return null
-        val last = match.groupValues[2].toIntOrNull() ?: return null
-        return if (first > 0 && last >= first) first..last else null
-    }
+    fun selectedRange(): IntRange? =
+        if (rangeMode == "Custom range") PageRangeParser.parse(customRange) else null
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
         it?.let { uri ->
