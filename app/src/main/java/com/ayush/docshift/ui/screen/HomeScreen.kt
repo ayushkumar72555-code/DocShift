@@ -39,8 +39,9 @@ private val CardBlue = Color(0xFF243F70)
 private val CardBlueLight = Color(0xFFB8CBEA)
 private val PaperLine = Color(0xFFB9AC96)
 private val TicketShape = GenericShape { size, _ ->
-    val notch = 9.dp.toPx()
-    val corner = 5.dp.toPx()
+    // Shape paths use pixel coordinates; proportions keep the notches consistent at any density.
+    val notch = size.width * 0.035f
+    val corner = size.height * 0.035f
     moveTo(corner, 0f)
     lineTo(size.width - corner, 0f)
     lineTo(size.width, corner)
