@@ -22,6 +22,21 @@ import kotlin.math.max
 import kotlin.math.min
 
 object PdfCompressor {
+    private fun copyCancellable(
+        input: java.io.InputStream,
+        output: java.io.OutputStream,
+        checkCancellation: () -> Unit
+    ) {
+        val buffer = ByteArray(64 * 1024)
+        while (true) {
+            checkCancellation()
+            val bytesRead = input.read(buffer)
+            if (bytesRead < 0) break
+            output.write(buffer, 0, bytesRead)
+        }
+        output.flush()
+    }
+
     enum class CompressionMode(
         val label: String,
         val description: String,
@@ -64,12 +79,18 @@ object PdfCompressor {
             val input = context.contentResolver.openInputStream(pdfUri)
                 ?: throw IllegalArgumentException("Cannot open PDF")
             input.use { stream ->
-                FileOutputStream(sourceFile).use { output -> stream.copyTo(output) }
+                FileOutputStream(sourceFile).use { output ->
+                    copyCancellable(stream, output, checkCancellation)
+                }
             }
 
             // Never degrade a document that already satisfies the requested maximum.
             if (sourceFile.length() <= targetBytes) {
-                sourceFile.copyTo(outputFile, overwrite = true)
+                sourceFile.inputStream().use { inputStream ->
+                    outputFile.outputStream().use { outputStream ->
+                        copyCancellable(inputStream, outputStream, checkCancellation)
+                    }
+                }
                 onProgress(1, 1)
                 completed = true
                 return outputFile
