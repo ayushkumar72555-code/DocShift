@@ -78,7 +78,7 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
     Scaffold(
         containerColor = Paper,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -91,12 +91,13 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
                             color = Ink,
                             fontFamily = FontFamily.Serif,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 27.sp
+                            fontSize = 27.sp,
+                            letterSpacing = 0.2.sp
                         )
                         HeaderRule(Modifier.weight(1f))
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Paper,
                     scrolledContainerColor = Paper
                 )
