@@ -101,7 +101,7 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
                                     tool = tool,
                                     onSelect = onSelect,
                                     modifier = Modifier.weight(1f),
-                                    featured = tool == tools[0] || (columns == 3 && tool == tools[1])
+                                    featured = tool == tools[0]
                                 )
                             }
                             repeat(columns - rowTools.size) {
