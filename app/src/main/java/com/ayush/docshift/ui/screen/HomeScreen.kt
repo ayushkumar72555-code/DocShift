@@ -30,7 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Paper = Color(0xFFE8DDC8)
+private val Paper = Color(0xFFF0E6D5)
 private val PaperLight = Color(0xFFFFF9ED)
 private val PaperGrey = Color(0xFFE5D8C0)
 private val Ink = Color(0xFF30271F)
@@ -40,8 +40,8 @@ private val CardBlueLight = Color(0xFFD8E2F0)
 private val PaperLine = Color(0xFFB8A17E)
 private val TicketShape = GenericShape { size, _ ->
     // Shape paths use pixel coordinates; proportions keep the notches consistent at any density.
-    val notch = size.width * 0.035f
-    val corner = size.height * 0.035f
+    val notch = minOf(size.height * 0.09f, size.width * 0.025f)
+    val corner = minOf(size.height * 0.045f, size.width * 0.035f)
     moveTo(corner, 0f)
     lineTo(size.width - corner, 0f)
     lineTo(size.width, corner)
@@ -106,12 +106,12 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
         Column(
             Modifier
                 .fillMaxSize()
+                .background(Paper)
                 .padding(innerPadding)
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .background(Paper)
                 .padding(horizontal = 18.dp)
-                .padding(top = 12.dp, bottom = 22.dp),
+                .padding(top = 16.dp, bottom = 22.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -133,7 +133,7 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 // Preserve the original two-column mobile grid; wider screens can use three.
                 val columns = if (maxWidth >= 600.dp) 3 else 2
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
                     tools.chunked(columns).forEach { rowTools ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -182,7 +182,7 @@ private fun HomeToolCard(
 
     Box(
         modifier = modifier
-            .heightIn(min = 164.dp)
+            .heightIn(min = 126.dp)
             .padding(end = 2.dp, bottom = 3.dp)
             .clickable(role = Role.Button) { onSelect(tool.screen) }
     ) {
@@ -196,14 +196,14 @@ private fun HomeToolCard(
             border = BorderStroke(1.dp, if (featured) Color(0xFF6E88A9) else PaperLine),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-        Box(Modifier.fillMaxWidth().heightIn(min = 164.dp)) {
+        Box(Modifier.fillMaxWidth().heightIn(min = 126.dp)) {
             PaperTexture(
                 modifier = Modifier.matchParentSize(),
                 dark = featured
             )
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 11.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -211,7 +211,7 @@ private fun HomeToolCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Box {
-                        Canvas(Modifier.size(48.dp)) {
+                        Canvas(Modifier.size(40.dp)) {
                             val stamp = if (featured) Color(0xFF1E3A61) else Color(0xFFE8D9BC)
                             drawRoundRect(stamp, cornerRadius = androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()))
                             drawRoundRect(
