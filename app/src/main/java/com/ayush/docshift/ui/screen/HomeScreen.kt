@@ -125,7 +125,7 @@ private fun HomeToolCard(
 ) {
     Card(
         modifier = modifier
-            .heightIn(min = 168.dp)
+            .heightIn(min = 148.dp)
             .clickable(role = Role.Button) { onSelect(tool.screen) },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
@@ -142,8 +142,8 @@ private fun HomeToolCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -151,7 +151,7 @@ private fun HomeToolCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Surface(
-                    modifier = Modifier.size(44.dp),
+                    modifier = Modifier.size(40.dp),
                     shape = RoundedCornerShape(14.dp),
                     color = if (featured) MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
                     else MaterialTheme.colorScheme.primaryContainer
@@ -162,7 +162,7 @@ private fun HomeToolCard(
                             contentDescription = null,
                             tint = if (featured) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(23.dp)
+                            modifier = Modifier.size(21.dp)
                         )
                     }
                 }
