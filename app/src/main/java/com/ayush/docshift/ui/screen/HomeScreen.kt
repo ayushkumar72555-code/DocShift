@@ -88,21 +88,23 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
 
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val columns = if (maxWidth >= 600.dp) 3 else 2
-                tools.chunked(columns).forEach { rowTools ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        rowTools.forEach { tool ->
-                            HomeToolCard(
-                                tool = tool,
-                                onSelect = onSelect,
-                                modifier = Modifier.weight(1f),
-                                featured = tool == tools[0] || (columns == 3 && tool == tools[1])
-                            )
-                        }
-                        repeat(columns - rowTools.size) {
-                            Spacer(Modifier.weight(1f))
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    tools.chunked(columns).forEach { rowTools ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowTools.forEach { tool ->
+                                HomeToolCard(
+                                    tool = tool,
+                                    onSelect = onSelect,
+                                    modifier = Modifier.weight(1f),
+                                    featured = tool == tools[0] || (columns == 3 && tool == tools[1])
+                                )
+                            }
+                            repeat(columns - rowTools.size) {
+                                Spacer(Modifier.weight(1f))
+                            }
                         }
                     }
                 }
