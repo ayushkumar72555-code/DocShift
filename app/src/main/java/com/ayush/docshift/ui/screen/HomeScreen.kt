@@ -64,11 +64,11 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
                 .padding(innerPadding)
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(top = 12.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+                .padding(horizontal = 18.dp)
+                .padding(top = 8.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     "YOUR FILES, SIMPLIFIED",
                     style = MaterialTheme.typography.labelLarge,
@@ -77,7 +77,7 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
                 )
                 Text(
                     "What would you like to do?",
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold
                 )
@@ -123,7 +123,7 @@ private fun HomeToolCard(
 ) {
     Card(
         modifier = modifier
-            .heightIn(min = 148.dp)
+            .heightIn(min = 140.dp)
             .clickable(role = Role.Button) { onSelect(tool.screen) },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
@@ -193,14 +193,14 @@ private fun PrivacyPromise() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
             Text(
                 text = "Private by design · files stay on your device.",
