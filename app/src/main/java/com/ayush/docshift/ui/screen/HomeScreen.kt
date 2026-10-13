@@ -125,7 +125,7 @@ private fun HomeToolCard(
 ) {
     Card(
         modifier = modifier
-            .heightIn(min = if (featured) 174.dp else 162.dp)
+            .heightIn(min = 168.dp)
             .clickable(role = Role.Button) { onSelect(tool.screen) },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
