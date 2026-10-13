@@ -14,6 +14,10 @@ import android.os.ParcelFileDescriptor
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.UUID
+import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlin.math.max
 import kotlin.math.min
 
@@ -33,7 +37,7 @@ object PdfCompressor {
     private const val MAX_JPEG_QUALITY = 95
     private const val MAX_COMPRESSION_PASSES = 28
 
-    fun compressToTarget(
+    suspend fun compressToTarget(
         context: Context,
         pdfUri: Uri,
         targetKb: Int,
@@ -47,12 +51,16 @@ object PdfCompressor {
         }
 
         val targetBytes = targetKb.toLong() * 1024L
-        val timestamp = System.currentTimeMillis()
-        val sourceFile = File(outputDir, "DocShift_source_$timestamp.pdf")
-        val outputFile = File(outputDir, "DocShift_compressed_$timestamp.pdf")
+        val sessionDir = File(outputDir, "compression_${UUID.randomUUID()}")
+        check(sessionDir.mkdirs()) { "Unable to create temporary compression directory" }
+        val sourceFile = File(sessionDir, "source.pdf")
+        val outputFile = File(outputDir, "DocShift_compressed_${UUID.randomUUID()}.pdf")
+        val job = coroutineContext[Job]
+        val checkCancellation = { job?.ensureActive() }
         var completed = false
 
         try {
+            checkCancellation()
             val input = context.contentResolver.openInputStream(pdfUri)
                 ?: throw IllegalArgumentException("Cannot open PDF")
             input.use { stream ->
@@ -77,7 +85,8 @@ object PdfCompressor {
                     mode = mode,
                     quality = quality,
                     scale = scale,
-                    onProgress = if (pass == 0) onProgress else null
+                    onProgress = if (pass == 0) onProgress else null,
+                    checkCancellation = checkCancellation
                 )
 
                 if (outputFile.length() <= targetBytes) {
@@ -97,6 +106,7 @@ object PdfCompressor {
             )
         } finally {
             sourceFile.delete()
+            sessionDir.deleteRecursively()
             if (!completed) outputFile.delete()
         }
     }
@@ -112,7 +122,8 @@ object PdfCompressor {
         mode: CompressionMode,
         quality: Int,
         scale: Float,
-        onProgress: ((Int, Int) -> Unit)?
+        onProgress: ((Int, Int) -> Unit)?,
+        checkCancellation: () -> Unit
     ) {
         if (outputFile.exists() && !outputFile.delete()) {
             throw IOException("Unable to replace temporary compressed PDF")
@@ -131,10 +142,12 @@ object PdfCompressor {
         val document = PdfDocument()
 
         try {
+            checkCancellation()
             val totalPages = renderer.pageCount
             require(totalPages > 0) { "The selected PDF has no pages" }
 
             for (index in 0 until totalPages) {
+                checkCancellation()
                 val page = renderer.openPage(index)
                 try {
                     val baseScale = min(
@@ -210,9 +223,15 @@ object PdfCompressor {
                 document.writeTo(output)
             }
         } finally {
-            document.close()
-            renderer.close()
-            descriptor.close()
+            try {
+                document.close()
+            } finally {
+                try {
+                    renderer.close()
+                } finally {
+                    descriptor.close()
+                }
+            }
         }
     }
 }
