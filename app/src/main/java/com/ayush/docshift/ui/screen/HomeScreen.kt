@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
@@ -171,7 +170,6 @@ private fun HomeToolCard(
     val featured = tool.screen == Screen.DocSafe
     val cardColor = if (featured) CardBlue else if (tool.screen == Screen.Resize) PaperGrey else PaperLight
     val foreground = if (featured) Color(0xFFF6F0E5) else Ink
-    val secondaryForeground = if (featured) CardBlueLight else InkMuted
 
     Card(
         modifier = modifier
@@ -265,7 +263,6 @@ private fun PrivacyPromise() {
             .fillMaxWidth()
             .clip(TicketShape)
             .background(Color(0xFFE2D3BA))
-            .padding(horizontal = 14.dp, vertical = 13.dp)
     ) {
         Canvas(Modifier.matchParentSize()) {
             val inset = 4.dp.toPx()
@@ -285,7 +282,11 @@ private fun PrivacyPromise() {
                 y += dash + gap
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF344B73), modifier = Modifier.size(20.dp))
             Text(
                 text = "Private • Files stay on your device.",
