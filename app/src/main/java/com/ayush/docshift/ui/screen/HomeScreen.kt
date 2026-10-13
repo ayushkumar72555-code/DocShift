@@ -189,7 +189,8 @@ private fun HomeToolCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = if (featured) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
