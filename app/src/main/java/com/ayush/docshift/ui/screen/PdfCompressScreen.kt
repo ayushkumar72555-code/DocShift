@@ -11,10 +11,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.core.content.FileProvider
@@ -35,11 +34,9 @@ fun PdfCompressScreen(cacheDir: File, initialPdf: Uri? = null, onBack: () -> Uni
     val keyboard = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
     val presets = listOf("100", "200", "500", "1000", "2000")
-    val modes = PdfCompressor.CompressionMode.entries
     var selectedPdf by remember { mutableStateOf(initialPdf) }
     var targetSize by remember { mutableStateOf("500") }
     var expanded by remember { mutableStateOf(false) }
-    var modeExpanded by remember { mutableStateOf(false) }
     var compressionMode by remember { mutableStateOf(PdfCompressor.CompressionMode.Balanced) }
     var originalSize by remember { mutableStateOf(0L) }
     var progress by remember { mutableStateOf(0) }
@@ -77,38 +74,25 @@ fun PdfCompressScreen(cacheDir: File, initialPdf: Uri? = null, onBack: () -> Uni
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 listOf(
-                    PdfCompressor.CompressionMode.HighQuality to "Gentle · print quality",
+                    PdfCompressor.CompressionMode.HighQuality to "Gentle · best for print",
                     PdfCompressor.CompressionMode.Balanced to "Balanced · recommended",
-                    PdfCompressor.CompressionMode.Maximum to "Extreme · web form limits"
+                    PdfCompressor.CompressionMode.Maximum to "Strongest reduction · lower quality",
+                    PdfCompressor.CompressionMode.ImagesOnly to "Image optimized · prioritize clarity"
                 ).forEach { (mode, description) ->
                     FilterChip(
                         selected = compressionMode == mode,
                         onClick = { compressionMode = mode },
-                        label = { Column { Text(mode.label, fontWeight = FontWeight.SemiBold); Text(description, style = MaterialTheme.typography.bodySmall) } },
+                        label = {
+                            Column {
+                                Text(mode.label, fontWeight = FontWeight.SemiBold)
+                                Text(description, style = MaterialTheme.typography.bodySmall)
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
-            SectionCard("Target settings") {
-                ExposedDropdownMenuBox(modeExpanded, { modeExpanded = !modeExpanded }) {
-                    OutlinedTextField(
-                        value = compressionMode.label,
-                        onValueChange = {},
-                        readOnly = true,
-                        modifier = Modifier.menuAnchor().fillMaxWidth(),
-                        label = { Text("Compression type") },
-                        supportingText = { Text(compressionMode.description) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(modeExpanded) }
-                    )
-                    ExposedDropdownMenu(modeExpanded, { modeExpanded = false }) {
-                        modes.forEach { mode ->
-                            DropdownMenuItem(text = { Column {
-                                Text(mode.label, fontWeight = FontWeight.Medium)
-                                Text(mode.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            } }, onClick = { compressionMode = mode; modeExpanded = false })
-                        }
-                    }
-                }
+            SectionCard("Target size") {
                 ExposedDropdownMenuBox(expanded, { expanded = !expanded }) {
                     OutlinedTextField(
                         value = targetSize,
