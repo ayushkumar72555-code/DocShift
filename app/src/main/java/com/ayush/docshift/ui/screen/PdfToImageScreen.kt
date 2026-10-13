@@ -45,8 +45,11 @@ fun PdfToImageScreen(
 
     fun selectedRange(): IntRange? {
         if (rangeMode != "Custom range") return null
-        val parts = customRange.split("-").mapNotNull { it.trim().toIntOrNull() }
-        return if (parts.size == 2 && parts[0] > 0 && parts[1] >= parts[0]) parts[0]..parts[1] else null
+        val match = Regex("""^\s*(\d+)\s*-\s*(\d+)\s*$""").matchEntire(customRange)
+            ?: return null
+        val first = match.groupValues[1].toIntOrNull() ?: return null
+        val last = match.groupValues[2].toIntOrNull() ?: return null
+        return if (first > 0 && last >= first) first..last else null
     }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
@@ -111,6 +114,15 @@ fun PdfToImageScreen(
 
             PrimaryAction("Convert to images", selectedPdf != null && !isProcessing) {
                 val uri = selectedPdf ?: return@PrimaryAction
+                val pageRange = selectedRange()
+                if (rangeMode == "Custom range" && pageRange == null) {
+                    Toast.makeText(
+                        context,
+                        "Enter a valid page range, for example 1-4",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@PrimaryAction
+                }
                 isProcessing = true
                 resultFiles = emptyList()
                 progress = 0
@@ -124,7 +136,7 @@ fun PdfToImageScreen(
                             File(cacheDir, "pdf_images"),
                             format = exportFormat,
                             dpi = dpi,
-                            pageRange = selectedRange()
+                            pageRange = pageRange
                         ) { current, total ->
                             scope.launch(Dispatchers.Main.immediate) {
                                 progress = current

@@ -34,7 +34,17 @@ object PdfToImageConverter {
         val outputFiles = mutableListOf<File>()
         try {
             val pageCount = renderer.pageCount
-            val pageIndexes = (pageRange ?: (1..pageCount)).filter { it in 1..pageCount }.map { it - 1 }
+            val requestedPages = pageRange ?: (1..pageCount)
+            if (pageRange != null) {
+                require(
+                    pageRange.first >= 1 &&
+                        pageRange.last >= pageRange.first &&
+                        pageRange.last <= pageCount
+                ) {
+                    "Page range must be between 1 and $pageCount"
+                }
+            }
+            val pageIndexes = requestedPages.map { it - 1 }
             require(pageIndexes.isNotEmpty()) { "Choose at least one page to export" }
             val renderScale = (dpi.coerceIn(72, 300) / 100f)
             for ((progressIndex, i) in pageIndexes.withIndex()) {

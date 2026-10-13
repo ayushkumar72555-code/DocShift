@@ -10,6 +10,9 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 object ImageResizer {
+    private const val MAX_OUTPUT_DIMENSION = 8192
+    private const val MAX_OUTPUT_PIXELS = 20_000_000L
+
     data class ImageDimensions(val width: Int, val height: Int)
 
     enum class ResizeUnit { Pixels, Centimeters, Inches }
@@ -74,6 +77,12 @@ object ImageResizer {
             toPixels(heightInput, unit, dpi),
             maintainAspectRatio
         )
+        require(target.width <= MAX_OUTPUT_DIMENSION && target.height <= MAX_OUTPUT_DIMENSION) {
+            "Maximum output dimension is $MAX_OUTPUT_DIMENSION pixels"
+        }
+        require(target.width.toLong() * target.height.toLong() <= MAX_OUTPUT_PIXELS) {
+            "Requested image is too large. Use 20 megapixels or less."
+        }
 
         val bitmap = BitmapUtils.decodeSafe(
             resolver,

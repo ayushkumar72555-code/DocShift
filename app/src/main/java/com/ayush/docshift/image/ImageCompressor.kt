@@ -69,7 +69,7 @@ object ImageCompressor {
                 val newHeight = max(1, (currentBitmap.height * scale).toInt())
 
                 if (newWidth == currentBitmap.width && newHeight == currentBitmap.height) {
-                    return writeResult(cacheDir, filePrefix, bestData!!)
+                    return writeResultWithinTarget(cacheDir, filePrefix, bestData!!, targetBytes)
                 }
 
                 val nextBitmap = Bitmap.createScaledBitmap(
@@ -83,10 +83,25 @@ object ImageCompressor {
                 currentBitmap = nextBitmap
             }
 
-            return writeResult(cacheDir, filePrefix, bestData!!)
+            return writeResultWithinTarget(cacheDir, filePrefix, bestData!!, targetBytes)
         } finally {
             if (currentBitmap !== bitmap && !currentBitmap.isRecycled) currentBitmap.recycle()
         }
+    }
+
+    private fun writeResultWithinTarget(
+        cacheDir: File,
+        prefix: String,
+        data: ByteArray,
+        targetBytes: Long
+    ): File {
+        if (data.size.toLong() > targetBytes) {
+            throw IllegalArgumentException(
+                "Unable to reach the requested target size of " + (targetBytes / 1024) +
+                    " KB. Try a larger target size."
+            )
+        }
+        return writeResult(cacheDir, prefix, data)
     }
 
     private fun findClosestJpeg(bitmap: Bitmap, targetBytes: Long): ByteArray {
