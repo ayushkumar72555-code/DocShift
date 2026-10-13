@@ -30,14 +30,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Paper = Color(0xFFF3EBDD)
-private val PaperLight = Color(0xFFFBF7EF)
-private val PaperGrey = Color(0xFFE7E3DA)
-private val Ink = Color(0xFF252B31)
-private val InkMuted = Color(0xFF6E6A61)
-private val CardBlue = Color(0xFF243F70)
-private val CardBlueLight = Color(0xFFB8CBEA)
-private val PaperLine = Color(0xFFB9AC96)
+private val Paper = Color(0xFFE8DDC8)
+private val PaperLight = Color(0xFFFFF9ED)
+private val PaperGrey = Color(0xFFE5D8C0)
+private val Ink = Color(0xFF30271F)
+private val InkMuted = Color(0xFF756652)
+private val CardBlue = Color(0xFF284B78)
+private val CardBlueLight = Color(0xFFD8E2F0)
+private val PaperLine = Color(0xFFB8A17E)
 private val TicketShape = GenericShape { size, _ ->
     // Shape paths use pixel coordinates; proportions keep the notches consistent at any density.
     val notch = size.width * 0.035f
@@ -114,13 +114,21 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
                 .padding(top = 12.dp, bottom = 22.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Text(
-                text = "What would you like to do?",
-                style = MaterialTheme.typography.headlineSmall,
-                color = Ink,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Bold
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("THE PAPER TOOLKIT", color = InkMuted, fontSize = 10.sp, letterSpacing = 2.4.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "What would you like to do?",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Ink,
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.Bold
+                )
+                Canvas(Modifier.fillMaxWidth().height(10.dp)) {
+                    val y = size.height / 2f
+                    drawLine(PaperLine.copy(alpha = 0.8f), Offset(0f, y), Offset(size.width * 0.78f, y), 1.dp.toPx())
+                    drawCircle(Color(0xFF9B7650), radius = 2.2.dp.toPx(), center = Offset(size.width * 0.78f, y))
+                }
+            }
 
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 // Preserve the original two-column mobile grid; wider screens can use three.
@@ -172,16 +180,23 @@ private fun HomeToolCard(
     val cardColor = if (featured) CardBlue else if (tool.screen == Screen.Resize) PaperGrey else PaperLight
     val foreground = if (featured) Color(0xFFF6F0E5) else Ink
 
-    Card(
+    Box(
         modifier = modifier
-            .heightIn(min = 150.dp)
-            .clickable(role = Role.Button) { onSelect(tool.screen) },
-        shape = TicketShape,
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        border = BorderStroke(1.dp, if (featured) Color(0xFF46618D) else PaperLine.copy(alpha = 0.8f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            .heightIn(min = 164.dp)
+            .padding(end = 2.dp, bottom = 3.dp)
+            .clickable(role = Role.Button) { onSelect(tool.screen) }
     ) {
-        Box(Modifier.fillMaxWidth().heightIn(min = 150.dp)) {
+        // Offset backing sheet makes the tile read as layered cardstock, not a flat Material card.
+        Box(Modifier.fillMaxSize().offset(x = 2.dp, y = 3.dp).clip(TicketShape)
+            .background(if (featured) Color(0xFF1D385F) else Color(0xFFD0BFA2)))
+        Card(
+            modifier = Modifier.fillMaxSize(),
+            shape = TicketShape,
+            colors = CardDefaults.cardColors(containerColor = cardColor),
+            border = BorderStroke(1.dp, if (featured) Color(0xFF6E88A9) else PaperLine),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+        Box(Modifier.fillMaxWidth().heightIn(min = 164.dp)) {
             PaperTexture(
                 modifier = Modifier.matchParentSize(),
                 dark = featured
@@ -192,30 +207,42 @@ private fun HomeToolCard(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.Top,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Box {
-                        Canvas(Modifier.size(44.dp)) {
-                            drawCircle(
-                                color = if (featured) Color(0xFF1A3158) else PaperLine.copy(alpha = 0.22f),
-                                radius = size.minDimension / 2f
+                        Canvas(Modifier.size(48.dp)) {
+                            val stamp = if (featured) Color(0xFF1E3A61) else Color(0xFFE8D9BC)
+                            drawRoundRect(stamp, cornerRadius = androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()))
+                            drawRoundRect(
+                                if (featured) CardBlueLight.copy(alpha = 0.7f) else PaperLine,
+                                topLeft = Offset(3.dp.toPx(), 3.dp.toPx()),
+                                size = androidx.compose.ui.geometry.Size(size.width - 6.dp.toPx(), size.height - 6.dp.toPx()),
+                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()),
+                                style = Stroke(1.dp.toPx())
                             )
-                            val c = if (featured) CardBlueLight else InkMuted
-                            drawCircle(c.copy(alpha = 0.35f), radius = size.minDimension / 2f - 1.dp.toPx(), style = Stroke(1.dp.toPx()))
                         }
                         Icon(
                             imageVector = tool.icon,
                             contentDescription = null,
-                            tint = if (featured) Color(0xFFE0D2B4) else Ink,
+                            tint = if (featured) Color(0xFFF1E7D2) else Ink,
                             modifier = Modifier.align(Alignment.Center).size(23.dp)
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = null,
-                        tint = if (featured) Color(0xFFE0D2B4) else InkMuted,
-                        modifier = Modifier.size(18.dp)
+                    Text(
+                        text = when (tool.screen) {
+                            Screen.DocSafe -> "VAULT"
+                            Screen.Compress -> "01"
+                            Screen.Resize -> "02"
+                            Screen.PdfCompress -> "03"
+                            Screen.ImageToPdf -> "04"
+                            Screen.PdfToImage -> "05"
+                            else -> "•"
+                        },
+                        color = if (featured) Color(0xFFD7E0EC).copy(alpha = 0.75f) else InkMuted.copy(alpha = 0.8f),
+                        fontSize = 9.sp,
+                        letterSpacing = 1.3.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
                 Text(
@@ -229,13 +256,14 @@ private fun HomeToolCard(
                 )
             }
         }
+        }
     }
 }
 
 @Composable
 private fun PaperTexture(modifier: Modifier = Modifier, dark: Boolean) {
-    val lineColor = if (dark) Color(0xFF7890B6).copy(alpha = 0.18f) else PaperLine.copy(alpha = 0.28f)
-    val grainColor = if (dark) Color(0xFFE7D7B9).copy(alpha = 0.11f) else Color(0xFF8B785B).copy(alpha = 0.10f)
+    val lineColor = if (dark) Color(0xFFB8CDE6).copy(alpha = 0.24f) else PaperLine.copy(alpha = 0.42f)
+    val grainColor = if (dark) Color(0xFFE7D7B9).copy(alpha = 0.16f) else Color(0xFF8B785B).copy(alpha = 0.14f)
     Canvas(modifier) {
         // A restrained graph-paper detail in the upper-right corner.
         val grid = 8.dp.toPx()
