@@ -101,7 +101,6 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
                                     tool = tool,
                                     onSelect = onSelect,
                                     modifier = Modifier.weight(1f),
-                                    featured = tool == tools[0]
                                 )
                             }
                             repeat(columns - rowTools.size) {
@@ -120,8 +119,7 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
 private fun HomeToolCard(
     tool: HomeTool,
     onSelect: (Screen) -> Unit,
-    modifier: Modifier = Modifier,
-    featured: Boolean = false
+    modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
@@ -129,13 +127,11 @@ private fun HomeToolCard(
             .clickable(role = Role.Button) { onSelect(tool.screen) },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = if (featured) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
         border = BorderStroke(
             1.dp,
-            if (featured) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -153,15 +149,13 @@ private fun HomeToolCard(
                 Surface(
                     modifier = Modifier.size(40.dp),
                     shape = RoundedCornerShape(14.dp),
-                    color = if (featured) MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
-                    else MaterialTheme.colorScheme.primaryContainer
+                    color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = tool.icon,
                             contentDescription = null,
-                            tint = if (featured) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onPrimaryContainer,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(21.dp)
                         )
                     }
@@ -169,8 +163,7 @@ private fun HomeToolCard(
                 Icon(
                     imageVector = Icons.Default.ArrowForward,
                     contentDescription = null,
-                    tint = if (featured) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -178,8 +171,7 @@ private fun HomeToolCard(
                 Text(
                     text = tool.title,
                     style = MaterialTheme.typography.titleSmall,
-                    color = if (featured) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.onSurface,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -187,8 +179,7 @@ private fun HomeToolCard(
                 Text(
                     text = tool.subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (featured) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
