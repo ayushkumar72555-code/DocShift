@@ -1,5 +1,6 @@
 package com.ayush.docshift.ui.screen
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -31,11 +32,11 @@ private data class HomeTool(
 fun HomeScreen(onSelect: (Screen) -> Unit) {
     val tools = listOf(
         HomeTool("DocSafe Vault", "Keep private files on this device.", Screen.DocSafe, Icons.Default.Lock),
-        HomeTool("Reduce image size", "Meet portal limits without guesswork.", Screen.Compress, Icons.Default.Image),
-        HomeTool("Resize image", "Precise dimensions, DPI and aspect control.", Screen.Resize, Icons.Default.Straighten),
-        HomeTool("Reduce PDF size", "Optimize documents for sharing and forms.", Screen.PdfCompress, Icons.Default.PictureAsPdf),
-        HomeTool("Combine images to PDF", "Arrange scans into one polished document.", Screen.ImageToPdf, Icons.Default.PhotoLibrary),
-        HomeTool("Export PDF to images", "Extract high-fidelity page images.", Screen.PdfToImage, Icons.Default.PictureAsPdf)
+        HomeTool("Reduce image size", "Smaller files for forms and sharing.", Screen.Compress, Icons.Default.Image),
+        HomeTool("Resize image", "Adjust dimensions and aspect ratio.", Screen.Resize, Icons.Default.Straighten),
+        HomeTool("Reduce PDF size", "Make documents easier to share.", Screen.PdfCompress, Icons.Default.PictureAsPdf),
+        HomeTool("Images to PDF", "Combine photos into one document.", Screen.ImageToPdf, Icons.Default.PhotoLibrary),
+        HomeTool("PDF to images", "Export pages as image files.", Screen.PdfToImage, Icons.Default.PictureAsPdf)
     )
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -45,7 +46,7 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
                     Text(
                         text = "DocShift",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -62,80 +63,130 @@ fun HomeScreen(onSelect: (Screen) -> Unit) {
                 .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(top = 18.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(top = 12.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            tools.forEach { tool -> HomeToolCard(tool, onSelect) }
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    "YOUR FILES, SIMPLIFIED",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "What would you like to do?",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Simple tools for images and PDFs, right on your device.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                HomeToolCard(tools[0], onSelect, Modifier.weight(1f), featured = true)
+                HomeToolCard(tools[1], onSelect, Modifier.weight(1f))
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                HomeToolCard(tools[2], onSelect, Modifier.weight(1f))
+                HomeToolCard(tools[3], onSelect, Modifier.weight(1f))
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                HomeToolCard(tools[4], onSelect, Modifier.weight(1f))
+                HomeToolCard(tools[5], onSelect, Modifier.weight(1f))
+            }
             PrivacyPromise()
         }
     }
 }
 
 @Composable
-private fun HomeToolCard(tool: HomeTool, onSelect: (Screen) -> Unit) {
+private fun HomeToolCard(
+    tool: HomeTool,
+    onSelect: (Screen) -> Unit,
+    modifier: Modifier = Modifier,
+    featured: Boolean = false
+) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
+            .heightIn(min = if (featured) 174.dp else 162.dp)
             .clickable { onSelect(tool.screen) },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = if (featured) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        border = androidx.compose.foundation.BorderStroke(
+        border = BorderStroke(
             1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+            if (featured) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 15.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Surface(
-                modifier = Modifier.size(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = tool.icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(25.dp)
-                    )
+                Surface(
+                    modifier = Modifier.size(44.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (featured) MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
+                    else MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = tool.icon,
+                            contentDescription = null,
+                            tint = if (featured) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(23.dp)
+                        )
+                    }
                 }
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = "Open " + tool.title,
+                    tint = if (featured) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
             }
-
-            Spacer(Modifier.width(14.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = tool.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (featured) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 1
+                    maxLines = 2
                 )
                 Text(
                     text = tool.subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (featured) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2
                 )
             }
-
-            Spacer(Modifier.width(10.dp))
-
-            Icon(
-                Icons.Default.ArrowForward,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
         }
     }
 }
