@@ -21,7 +21,9 @@ import androidx.core.content.FileProvider
 import com.ayush.docshift.pdf.PdfCompressor
 import com.ayush.docshift.storage.DownloadSaver
 import com.ayush.docshift.util.FormatUtils
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -43,6 +45,7 @@ fun PdfCompressScreen(cacheDir: File, initialPdf: Uri? = null, onBack: () -> Uni
     var progress by remember { mutableStateOf(0) }
     var totalPages by remember { mutableStateOf(0) }
     var isProcessing by remember { mutableStateOf(false) }
+    var compressionJob by remember { mutableStateOf<Job?>(null) }
     var resultFile by remember { mutableStateOf<File?>(null) }
 
     fun selectPdf(uri: Uri) {
@@ -68,6 +71,11 @@ fun PdfCompressScreen(cacheDir: File, initialPdf: Uri? = null, onBack: () -> Uni
                 SecondaryAction("Select PDF", !isProcessing) { picker.launch("application/pdf") }
             }
             SectionCard("Compression level") {
+                Text(
+                    "Note: this compression rebuilds pages as images. Selectable text, links, forms and accessibility may not be preserved.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 listOf(
                     PdfCompressor.CompressionMode.HighQuality to "Gentle · print quality",
                     PdfCompressor.CompressionMode.Balanced to "Balanced · recommended",
@@ -116,7 +124,12 @@ fun PdfCompressScreen(cacheDir: File, initialPdf: Uri? = null, onBack: () -> Uni
                     }
                 }
             }
-            if (isProcessing) SectionCard("Progress") { ProgressBlock(progress, totalPages, "Processing page " + progress + " of " + totalPages) }
+            if (isProcessing) SectionCard("Progress") {
+                ProgressBlock(progress, totalPages, "Processing page " + progress + " of " + totalPages)
+                TextButton(onClick = { compressionJob?.cancel() }) {
+                    Text("Cancel compression")
+                }
+            }
             PrimaryAction(if (isProcessing) "Compressing…" else "Reduce PDF size", selectedPdf != null && !isProcessing) {
                 keyboard?.hide()
                 val kb = targetSize.toIntOrNull()
@@ -129,7 +142,7 @@ fun PdfCompressScreen(cacheDir: File, initialPdf: Uri? = null, onBack: () -> Uni
                 resultFile = null
                 progress = 0
                 totalPages = 0
-                scope.launch {
+                compressionJob = scope.launch {
                     try {
                         resultFile = withContext(Dispatchers.IO) {
                             PdfCompressor.compressToTarget(context, uri, kb, File(cacheDir, "compressed_pdfs"), compressionMode) { current, total ->
@@ -139,9 +152,14 @@ fun PdfCompressScreen(cacheDir: File, initialPdf: Uri? = null, onBack: () -> Uni
                                 }
                             }
                         }
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
                     } catch (e: Exception) {
                         Toast.makeText(context, e.message ?: "PDF compression failed", Toast.LENGTH_LONG).show()
-                    } finally { isProcessing = false }
+                    } finally {
+                        isProcessing = false
+                        compressionJob = null
+                    }
                 }
             }
             resultFile?.let { file ->
